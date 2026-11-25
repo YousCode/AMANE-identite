@@ -30,19 +30,27 @@ npm run format     # met en forme tout le code (Prettier)
 | `scripts/encoder-films.sh`                      | Ré-encode les originaux Higgsfield pour le web                                                                                                                                                                                                                              |
 | `src/brand/`                                    | Logos copiés depuis `../logos/svg/` (couleur pilotée par le CSS)                                                                                                                                                                                                            |
 
-## Mise en ligne sur Vercel
+## Mise en ligne : amane.paris
 
-1. vercel.com → **Add New… → Project** → importer ce dépôt.
-2. **Root Directory : `site`**. Le reste est lu dans `site/vercel.json`.
-3. Renseigner les variables d'environnement listées dans `.env.example`, puis **Deploy**.
+Le domaine est acheté chez OVH, le site est servi par Vercel (la fonction du formulaire en a besoin).
+
+1. **Vercel** → **Add New… → Project** → importer ce dépôt. **Root Directory : `site`**. Le reste est lu dans `site/vercel.json`. **Deploy**.
+2. **Vercel** → le projet → **Settings → Domains** : ajouter `amane.paris`, puis `www.amane.paris` (redirigé vers le premier). Vercel affiche les deux enregistrements à créer.
+3. **OVH** → **Noms de domaine → amane.paris → Zone DNS** : recopier ces deux enregistrements tels que Vercel les affiche (un `A` pour `amane.paris`, un `CNAME` pour `www`). Supprimer les anciens `A` et `CNAME www` qu'OVH a créés par défaut.
+4. **Vercel** → **Settings → Environment Variables** : renseigner les variables de `.env.example`, puis redéployer.
+
+Vérification : `https://amane.paris` affiche la porte, et `https://amane.paris/sitemap.xml` liste les quatre langues.
+
+L'adresse `https://amane.paris` est inscrite par défaut dans les balises de référencement (`scripts/prerender.mjs`).
 
 Le formulaire répond « envoi impossible » tant que `BREVO_API_KEY`, `LEAD_TO_EMAIL` et `LEAD_FROM_EMAIL` ne sont pas renseignées.
 
 ### Brevo
 
-1. Brevo → **Expéditeurs, domaines et IP dédiées** : ajouter et valider l'adresse d'expédition (`LEAD_FROM_EMAIL`), idéalement sur le domaine du site avec SPF et DKIM.
-2. Brevo → **Clés SMTP et API** : créer une clé API et la coller dans `BREVO_API_KEY` sur Vercel. Ne jamais l'écrire dans le dépôt.
-3. `LEAD_TO_EMAIL` : l'adresse qui reçoit les demandes (plusieurs possibles, séparées par des virgules).
+1. Brevo → **Expéditeurs, domaines et IP dédiées → Domaines** : ajouter `amane.paris`. Brevo donne des enregistrements DNS (DKIM, DMARC) à créer dans la zone DNS d'OVH. Sans eux, les e-mails risquent d'arriver en indésirables.
+2. Même page, **Expéditeurs** : ajouter l'adresse d'expédition, par exemple `demande@amane.paris` (`LEAD_FROM_EMAIL`). Si un client répond à l'accusé de réception, sa réponse arrive sur cette adresse : il faut qu'elle existe et soit relevée (OVH propose des adresses e-mail avec le domaine).
+3. Brevo → **Clés SMTP et API** : créer une clé API et la coller dans `BREVO_API_KEY` sur Vercel. Ne jamais l'écrire dans le dépôt.
+4. `LEAD_TO_EMAIL` : l'adresse qui reçoit les demandes (plusieurs possibles, séparées par des virgules).
 
 ## Le récit
 

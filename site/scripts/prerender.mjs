@@ -7,12 +7,9 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const dist = path.join(root, 'dist');
 
-// Adresse publique du site : SITE_URL, sinon le domaine de production donné par Vercel.
-const fromVercel = process.env.VERCEL_PROJECT_PRODUCTION_URL && `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
-const site = (process.env.SITE_URL || fromVercel || 'http://localhost:4173').replace(/\/+$/, '');
-if (!process.env.SITE_URL && !fromVercel) {
-  console.warn('! SITE_URL absent : les adresses canoniques pointent vers ' + site);
-}
+// Adresse publique du site. Elle sert aux balises canoniques, hreflang, au plan du site et à robots.txt :
+// même un déploiement d'aperçu doit désigner le domaine officiel. SITE_URL permet de la remplacer (tests locaux).
+const site = (process.env.SITE_URL || 'https://amane.paris').replace(/\/+$/, '');
 
 const { render, LANGS, LANG_META } = await import(pathToFileURL(path.join(root, 'dist-ssr', 'entry-server.js')).href);
 const template = fs.readFileSync(path.join(dist, 'index.html'), 'utf8');
