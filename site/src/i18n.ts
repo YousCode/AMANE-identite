@@ -113,16 +113,17 @@ type Extra = {
   cardTitle: string;
   cardEmpty: string;
   pax: (n: string) => string;
-  /** Services ajoutés à ceux du site d'origine : immobilier, tables, événements, séjour esthétique */
+  /** Services ajoutés à ceux du site d'origine : immobilier, tables, événements, séjour esthétique, création */
   s7: Triple;
   s8: Triple;
   s9: Triple;
   s10: Triple;
+  s11: Triple;
   /** Intitulé de la liste des cabinets partenaires, quand elle est renseignée */
   eList: string;
-  /** Le récit : six chapitres entre le prologue (la porte s'ouvre) et l'épilogue (elle se referme) */
+  /** Le récit : sept chapitres entre le prologue (la porte s'ouvre) et l'épilogue (elle se referme) */
   chap: string;
-  chapters: [Pair, Pair, Pair, Pair, Pair, Pair];
+  chapters: [Pair, Pair, Pair, Pair, Pair, Pair, Pair];
   epK: string;
   epT: string;
   /** Jeu de cartes */
@@ -184,6 +185,11 @@ const extra: Record<Lang, Extra> = {
       "Pour les patients de nos cabinets partenaires de médecine esthétique : accueil à l'aéroport, chauffeur le jour du rendez-vous, hôtel au calme et retour serein.",
       'Cabinets partenaires · Paris',
     ],
+    s11: [
+      'Création & marketing',
+      'Films de marque, contenus pour les réseaux, sites internet : nous concevons et produisons l’image de votre maison.',
+      'Vidéo · Sites internet · Réseaux',
+    ],
     eList: 'Cabinets partenaires',
     chap: 'Chapitre',
     chapters: [
@@ -195,6 +201,7 @@ const extra: Record<Lang, Extra> = {
       ['L’adresse', 'Une suite pour quelques nuits, un appartement pour une saison, un bien pour la vie.'],
       ['La table', 'La table qu’on ne trouve plus, le dîner qu’on n’oublie pas. Nous réservons, nous composons.'],
       ['Le temps pour soi', 'Une matinée faubourg Saint-Honoré, un rendez-vous que personne n’a besoin de connaître.'],
+      ['L’image', 'Un film, un site, une campagne : nous donnons à votre maison l’image qu’elle mérite.'],
       [
         'Tout le reste',
         'Ce qui n’entre dans aucune case. Demandez : c’est souvent là que l’histoire devient la vôtre.',
@@ -256,6 +263,11 @@ const extra: Record<Lang, Extra> = {
       'For patients of our partner aesthetic medicine clinics: airport welcome, a chauffeur on the day of the appointment, a quiet hotel and a serene journey home.',
       'Partner clinics · Paris',
     ],
+    s11: [
+      'Creative & marketing',
+      'Brand films, social content, websites: we design and produce the image of your house.',
+      'Video · Websites · Social',
+    ],
     eList: 'Partner clinics',
     chap: 'Chapter',
     chapters: [
@@ -264,6 +276,7 @@ const extra: Record<Lang, Extra> = {
       ['The address', 'A suite for a few nights, an apartment for a season, a property for life.'],
       ['The table', 'The table no one can get, the dinner no one forgets. We reserve, we compose.'],
       ['Time for yourself', 'A morning on the Faubourg Saint-Honoré, an appointment no one needs to know about.'],
+      ['The image', 'A film, a website, a campaign: we give your house the image it deserves.'],
       ['Everything else', 'Whatever fits no category. Ask: that is often where the story becomes yours.'],
     ],
     epK: 'Epilogue',
@@ -322,6 +335,11 @@ const extra: Record<Lang, Extra> = {
       'Para los pacientes de nuestras clínicas asociadas de medicina estética: recepción en el aeropuerto, chófer el día de la cita, hotel tranquilo y regreso sereno.',
       'Clínicas asociadas · París',
     ],
+    s11: [
+      'Creación y marketing',
+      'Películas de marca, contenidos para redes, sitios web: diseñamos y producimos la imagen de su casa.',
+      'Vídeo · Sitios web · Redes',
+    ],
     eList: 'Clínicas asociadas',
     chap: 'Capítulo',
     chapters: [
@@ -333,6 +351,7 @@ const extra: Record<Lang, Extra> = {
       ],
       ['La mesa', 'La mesa imposible, la cena inolvidable. Nosotros reservamos, nosotros componemos.'],
       ['Tiempo para usted', 'Una mañana en el Faubourg Saint-Honoré, una cita que nadie necesita conocer.'],
+      ['La imagen', 'Una película, un sitio web, una campaña: damos a su casa la imagen que merece.'],
       ['Todo lo demás', 'Lo que no cabe en ninguna casilla. Pídalo: a menudo ahí la historia se vuelve suya.'],
     ],
     epK: 'Epílogo',
@@ -387,6 +406,11 @@ const extra: Record<Lang, Extra> = {
       'لمرضى عيادات الطب التجميلي الشريكة لنا: استقبال في المطار، وسائق يوم الموعد، وفندق هادئ، وعودة مطمئنة.',
       'العيادات الشريكة · باريس',
     ],
+    s11: [
+      'الإبداع والتسويق',
+      'أفلام العلامة، ومحتوى شبكات التواصل، والمواقع الإلكترونية: نصمّم صورة دارك وننتجها.',
+      'فيديو · مواقع إلكترونية · شبكات التواصل',
+    ],
     eList: 'العيادات الشريكة',
     chap: 'الفصل',
     chapters: [
@@ -395,6 +419,7 @@ const extra: Record<Lang, Extra> = {
       ['العنوان', 'جناح لبضع ليالٍ، أو شقة لموسم، أو عقار للعمر.'],
       ['المائدة', 'الطاولة التي يصعب حجزها، والعشاء الذي لا يُنسى. نحن نحجز ونرتّب.'],
       ['وقت لك', 'صباح في فوبور سان أونوريه، وموعد لا يحتاج أحد إلى معرفته.'],
+      ['الصورة', 'فيلم، أو موقع، أو حملة: نمنح دارك الصورة التي تستحقها.'],
       ['كل ما عدا ذلك', 'كل ما لا يندرج تحت أي خانة. اطلب: فهناك غالباً تصبح القصة قصتك.'],
     ],
     epK: 'الخاتمة',
@@ -454,6 +479,7 @@ export const SERVICES = [
   { key: 's9', id: 'evenements', film: 'reception', portrait: '', flip: false },
   { key: 's4', id: 'shopping', film: 'shopping', portrait: '', flip: false },
   { key: 's10', id: 'esthetique', film: 'clinique', portrait: 'm-clinique', flip: true },
+  { key: 's11', id: 'creation', film: 'tournage', portrait: '', flip: true },
   { key: 's6', id: 'conciergerie', film: 'cour', portrait: '', flip: false },
 ] as const;
 
@@ -466,6 +492,7 @@ export const CHAPTERS: { id: string; services: ServiceId[] }[] = [
   { id: 'adresse', services: ['sejours', 'immobilier'] },
   { id: 'table', services: ['tables', 'evenements'] },
   { id: 'soi', services: ['shopping', 'esthetique'] },
+  { id: 'image', services: ['creation'] },
   { id: 'reste', services: ['conciergerie'] },
 ];
 

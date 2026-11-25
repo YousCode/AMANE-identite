@@ -253,6 +253,7 @@ describe('champs fermés : service, date, passagers', () => {
       'Événements',
       'Personal shopping',
       'Séjour esthétique',
+      'Création & marketing',
       'Conciergerie sur demande',
       'Autre demande',
     ],
@@ -266,6 +267,7 @@ describe('champs fermés : service, date, passagers', () => {
       'Events',
       'Personal shopping',
       'Aesthetic stay',
+      'Creative & marketing',
       'Concierge on request',
       'Other request',
     ],
@@ -279,6 +281,7 @@ describe('champs fermés : service, date, passagers', () => {
       'Eventos',
       'Personal shopping',
       'Estancia estética',
+      'Creación y marketing',
       'Concierge a demanda',
       'Otra solicitud',
     ],
@@ -292,6 +295,7 @@ describe('champs fermés : service, date, passagers', () => {
       'الفعاليات',
       'التسوّق الشخصي',
       'إقامة تجميلية',
+      'الإبداع والتسويق',
       'كونسيرج عند الطلب',
       'طلب آخر',
     ],
@@ -308,6 +312,7 @@ describe('champs fermés : service, date, passagers', () => {
       'evenements',
       'shopping',
       'esthetique',
+      'creation',
       'conciergerie',
       'autre',
     ]);
@@ -339,6 +344,12 @@ describe('champs fermés : service, date, passagers', () => {
       ar: 'المطاعم والحجوزات',
     },
     evenements: { fr: 'Événements', en: 'Events', es: 'Eventos', ar: 'الفعاليات' },
+    creation: {
+      fr: 'Création & marketing',
+      en: 'Creative & marketing',
+      es: 'Creación y marketing',
+      ar: 'الإبداع والتسويق',
+    },
   };
 
   for (const [service, libelles] of Object.entries(NOUVEAUX)) {
@@ -360,23 +371,31 @@ describe('champs fermés : service, date, passagers', () => {
     }
   }
 
-  test('« & » du libellé « Tables & restaurants » : échappé dans le HTML, intact dans le sujet et le texte', async () => {
-    for (const langue of ['fr', 'en']) {
-      _viderLimite();
-      const r = await envoyer({ service: 'tables', langue });
-      const [equipe, accuse] = r.appels;
-      assert.equal(equipe.corps.subject, 'Nouvelle demande — Tables & restaurants — Jeanne Martin');
-      for (const { corps } of r.appels) {
-        assert.ok(corps.textContent.includes('Tables & restaurants'));
-        assert.ok(!corps.textContent.includes('&amp;'));
-        assert.ok(corps.htmlContent.includes('Tables &amp; restaurants'));
-        assert.ok(!corps.htmlContent.includes('Tables & restaurants'), 'aucun « & » nu dans le HTML');
-        // Aucun « & » du HTML qui ne soit le début d'une entité.
-        assert.ok(!/&(?!(?:amp|lt|gt|quot|nbsp|#39);)/.test(corps.htmlContent));
+  for (const [service, parLangue] of [
+    ['tables', { fr: 'Tables & restaurants', en: 'Tables & restaurants' }],
+    ['creation', { fr: 'Création & marketing', en: 'Creative & marketing' }],
+  ]) {
+    test(`« & » du libellé de « ${service} » : échappé dans le HTML, intact dans le sujet et le texte`, async () => {
+      for (const [langue, libelle] of Object.entries(parLangue)) {
+        _viderLimite();
+        const r = await envoyer({ service, langue });
+        const [equipe, accuse] = r.appels;
+        assert.equal(equipe.corps.subject, `Nouvelle demande — ${parLangue.fr} — Jeanne Martin`);
+        for (const [corps, attendu] of [
+          [equipe.corps, parLangue.fr],
+          [accuse.corps, libelle],
+        ]) {
+          assert.ok(corps.textContent.includes(attendu));
+          assert.ok(!corps.textContent.includes('&amp;'));
+          assert.ok(corps.htmlContent.includes(attendu.replace('&', '&amp;')));
+          assert.ok(!corps.htmlContent.includes(attendu), 'aucun « & » nu dans le HTML');
+          // Aucun « & » du HTML qui ne soit le début d'une entité.
+          assert.ok(!/&(?!(?:amp|lt|gt|quot|nbsp|#39);)/.test(corps.htmlContent));
+        }
+        assert.ok(accuse.corps.subject.includes('Amane'));
       }
-      assert.ok(accuse.corps.subject.includes('Amane'));
-    }
-  });
+    });
+  }
 
   for (const service of [
     'Location de yacht',
