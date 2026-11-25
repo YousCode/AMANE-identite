@@ -868,9 +868,8 @@ html[dir='rtl'] .index a::before {
 /* Le logotype reste dans l'angle de chaque film : discret, toujours là */
 .griffe {
   display: block;
-  width: clamp(86px, 8vw, 116px);
-  opacity: 0.85;
-  filter: drop-shadow(0 1px 10px rgba(var(--noir-rgb), 0.45));
+  width: clamp(60px, 5.2vw, 80px);
+  opacity: 0.5;
 }
 .film .note {
   margin-top: 10px;
@@ -1470,7 +1469,7 @@ html:not(.js) .rideau {
     gap: 10px;
   }
   .griffe {
-    width: 78px;
+    width: 56px;
   }
   .fleet {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2235,9 +2234,15 @@ html[dir='rtl'] .film h3 {
   pointer-events: none;
 }
 /* Celle qui arrive porte une ombre sur la précédente */
-.scene + *,
+/* La scène qui arrive n'a pas de bord net : son haut se fond dans la précédente, sur une hauteur
+   qui se réduit à mesure qu'elle prend sa place. */
 .scene + .scene .scene__pin {
-  box-shadow: 0 -24px 60px -30px rgba(var(--noir-rgb), 0.45);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 calc((1 - var(--enter, 1)) * 24vh));
+  mask-image: linear-gradient(to bottom, transparent 0, #000 calc((1 - var(--enter, 1)) * 24vh));
+}
+/* Après la dernière scène d'une série, la section suivante porte une ombre douce */
+.scene + :not(.scene) {
+  box-shadow: 0 -30px 70px -36px rgba(var(--noir-rgb), 0.4);
 }
 .film .cap {
   transform: translate3d(0, calc(var(--leave, 0) * -70px), 0);
@@ -2289,6 +2294,8 @@ html[dir='rtl'] .nav::after {
   }
   .scene__pin {
     position: relative;
+    -webkit-mask-image: none !important;
+    mask-image: none !important;
   }
   .scene__pin::before,
   .nav::after {
