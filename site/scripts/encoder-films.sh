@@ -37,3 +37,4 @@ encode table          table.mp4 1920 1080
 encode reception      reception.mp4 1920 1080
 encode m-table        m-table.mp4 1080 1920
 encode m-appartement  m-appartement.mp4 1080 1920
+encode tournage       tournage.mp4 1920 1080

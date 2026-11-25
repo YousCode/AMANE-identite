@@ -17,18 +17,18 @@ npm run format     # met en forme tout le code (Prettier)
 
 ## Contenu
 
-| Chemin                                          | Rôle                                                                                                                                                                                                                                                                        |
-| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/App.tsx`, `src/components/`                | La page, racontée comme une histoire : prologue (la porte s'ouvre sur « Arrive as a Guest. »), la maison, six chapitres de services en films, rituel, flotte, jeu de cartes, questions, épilogue (la porte se referme sur « Leave with a Story. »), demande en trois étapes |
-| `src/i18n-base.json`, `src/i18n.ts`             | Tous les textes, en français, anglais, espagnol et arabe                                                                                                                                                                                                                    |
-| `src/styles.css`                                | Styles. La palette de l'édition 02 est dans le bloc `:root`, nulle part ailleurs                                                                                                                                                                                            |
-| `src/entry-server.tsx`, `scripts/prerender.mjs` | Pré-rendu : balises de référencement, données structurées, `sitemap.xml`, `robots.txt`                                                                                                                                                                                      |
-| `api/lead.js`, `api/_lib/`                      | Fonction serveur du formulaire : e-mail à l'équipe et accusé de réception au client                                                                                                                                                                                         |
-| `public/frames/`                                | Les 48 images de la porte qui s'ouvre au défilement                                                                                                                                                                                                                         |
-| `public/video/`, `public/img/`                  | Films des services en 1080p (MP4 + WebM), affiches, photos de la flotte, motif Arcades                                                                                                                                                                                      |
-| `public/cartes/`                                | Figures du jeu de cartes Amane, rendues depuis le générateur du jeu                                                                                                                                                                                                         |
-| `scripts/encoder-films.sh`                      | Ré-encode les originaux Higgsfield pour le web                                                                                                                                                                                                                              |
-| `src/brand/`                                    | Logos copiés depuis `../logos/svg/` (couleur pilotée par le CSS)                                                                                                                                                                                                            |
+| Chemin                                          | Rôle                                                                                                                                                                                                                                                                         |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/App.tsx`, `src/components/`                | La page, racontée comme une histoire : prologue (la porte s'ouvre sur « Arrive as a Guest. »), la maison, sept chapitres de services en films, rituel, flotte, jeu de cartes, questions, épilogue (la porte se referme sur « Leave with a Story. »), demande en trois étapes |
+| `src/i18n-base.json`, `src/i18n.ts`             | Tous les textes, en français, anglais, espagnol et arabe                                                                                                                                                                                                                     |
+| `src/styles.css`                                | Styles. La palette de l'édition 02 est dans le bloc `:root`, nulle part ailleurs                                                                                                                                                                                             |
+| `src/entry-server.tsx`, `scripts/prerender.mjs` | Pré-rendu : balises de référencement, données structurées, `sitemap.xml`, `robots.txt`                                                                                                                                                                                       |
+| `api/lead.js`, `api/_lib/`                      | Fonction serveur du formulaire : e-mail à l'équipe et accusé de réception au client                                                                                                                                                                                          |
+| `public/frames/`                                | Les 48 images de la porte qui s'ouvre au défilement                                                                                                                                                                                                                          |
+| `public/video/`, `public/img/`                  | Films des services en 1080p (MP4 + WebM), affiches, photos de la flotte, motif Arcades                                                                                                                                                                                       |
+| `public/cartes/`                                | Figures du jeu de cartes Amane, rendues depuis le générateur du jeu                                                                                                                                                                                                          |
+| `scripts/encoder-films.sh`                      | Ré-encode les originaux Higgsfield pour le web                                                                                                                                                                                                                               |
+| `src/brand/`                                    | Logos copiés depuis `../logos/svg/` (couleur pilotée par le CSS)                                                                                                                                                                                                             |
 
 ## Mise en ligne : amane.paris
 
@@ -54,7 +54,7 @@ Le formulaire répond « envoi impossible » tant que `BREVO_API_KEY`, `LEAD_TO_
 
 ## Le récit
 
-La devise de la maison, « Arrive as a Guest. Leave with a Story. », structure la page : sa première moitié ouvre le site, la seconde le referme. Entre les deux, les services sont regroupés en six chapitres (`CHAPTERS` dans `src/i18n.ts`) : l'arrivée, la route, l'adresse, la table, le temps pour soi, tout le reste.
+La devise de la maison, « Arrive as a Guest. Leave with a Story. », structure la page : sa première moitié ouvre le site, la seconde le referme. Entre les deux, les services sont regroupés en sept chapitres (`CHAPTERS` dans `src/i18n.ts`) : l'arrivée, la route, l'adresse, la table, le temps pour soi, l'image, tout le reste.
 
 ## Le défilement
 
@@ -64,7 +64,7 @@ La devise de la maison, « Arrive as a Guest. Leave with a Story. », structure 
 
 La liste est dans `src/i18n.ts` (`SERVICES`) et, côté serveur, dans `api/_lib/lead-core.js` : les deux doivent rester identiques.
 
-Voitures d'exception · Chauffeur privé · Van VIP · Séjours clé en main · Immobilier · Tables & restaurants · Événements · Personal shopping · Séjour esthétique · Conciergerie sur demande.
+Van VIP · Voitures d'exception · Chauffeur privé · Séjours clé en main · Immobilier · Tables & restaurants · Événements · Personal shopping · Séjour esthétique · Création & marketing · Conciergerie sur demande.
 
 Les cabinets esthétiques partenaires ne sont cités que si `CABINETS` est renseigné dans `src/config.ts`.
 
