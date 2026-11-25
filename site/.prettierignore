@@ -1,0 +1,7 @@
+dist/
+dist-ssr/
+dist-apercu/
+public/
+package-lock.json
+src/i18n-base.json
+src/brand/*.svg

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="fr" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#3B0C15" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script>
+      (function (h) {
+        h.classList.add('js');
+        // Déjà venu dans cette session : pas de rideau de chargement.
+        try {
+          if (sessionStorage.getItem('amane-vu')) h.classList.add('pret', 'deja');
+        } catch (e) {}
+        // Si le script principal n'a pas démarré au bout de 4 s, la page s'affiche sans animation.
+        setTimeout(function () {
+          if (!h.classList.contains('charge')) h.classList.remove('js');
+        }, 4000);
+      })(document.documentElement);
+    </script>
+    <!--head-->
+  </head>
+  <body>
+    <div id="root"><!--app--></div>
+    <script type="module" src="/src/entry-client.tsx"></script>
+  </body>
+</html>
