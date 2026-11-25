@@ -13,6 +13,7 @@ logos/
 brandbook/
   index.html  Brand book complet (s'ouvre dans un navigateur, aucune dépendance)
 source/       Scripts qui génèrent les logos et le brand book
+site/         Site public (React + Vite, 4 langues, formulaire relié à l'e-mail) : voir site/README.md
 archives/
   edition-01/ Première version (avant le passage au bordeaux)
 ```
