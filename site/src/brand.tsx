@@ -13,18 +13,6 @@ export function MarkA({ className }: { className?: string }) {
   );
 }
 
-function Raw({ svg, className, label }: { svg: string; className?: string; label?: string }) {
-  return (
-    <span
-      className={className}
-      role={label ? 'img' : undefined}
-      aria-label={label}
-      aria-hidden={label ? undefined : true}
-      dangerouslySetInnerHTML={{ __html: svg }}
-    />
-  );
-}
-
 /**
  * Monogramme (logos/svg/amane-monogramme-*.svg), pièce par pièce pour l'animation de chargement :
  * les deux arcs se tracent, le sol s'étire, le A monte, le losange s'allume.
@@ -44,8 +32,60 @@ export function MonogrammeTrace() {
   );
 }
 
-/** Logotype vectorisé : jamais retapé au clavier (voir README de l'identité). */
-export const Logotype = ({ className }: { className?: string }) => (
-  <Raw svg={logotypeSvg} className={className} label="Amane — Conciergerie, Paris" />
+/** Découpe un fichier SVG en son cadre et son contenu, pour en faire un symbole réutilisable. */
+function parts(svg: string) {
+  return {
+    viewBox: /viewBox="([^"]+)"/.exec(svg)?.[1] ?? '0 0 100 100',
+    inner: svg.replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, ''),
+  };
+}
+const LOGOTYPE = parts(logotypeSvg);
+const SCEAU = parts(sceauSvg);
+
+/**
+ * Les dessins lourds (logotype, sceau) ne sont écrits qu'une fois dans la page ;
+ * chaque emploi y renvoie par <use>, ce qui garde le HTML léger malgré un logotype par film.
+ */
+export function Sprite() {
+  const symbol = (id: string, p: { viewBox: string; inner: string }) =>
+    `<symbol id="${id}" viewBox="${p.viewBox}">${p.inner}</symbol>`;
+  return (
+    <svg
+      width="0"
+      height="0"
+      style={{ position: 'absolute' }}
+      aria-hidden="true"
+      dangerouslySetInnerHTML={{ __html: symbol('amane-logotype', LOGOTYPE) + symbol('amane-sceau', SCEAU) }}
+    />
+  );
+}
+
+function Use({ id, viewBox, className, label }: { id: string; viewBox: string; className?: string; label?: string }) {
+  // Le symbole garde son propre cadre (origine comprise) ; ici on ne reprend que ses dimensions.
+  const [, , w, h] = viewBox.split(' ');
+  return (
+    <svg
+      className={className}
+      viewBox={`0 0 ${w} ${h}`}
+      role={label ? 'img' : undefined}
+      aria-label={label}
+      aria-hidden={label ? undefined : true}
+      focusable="false"
+    >
+      <use href={`#${id}`} />
+    </svg>
+  );
+}
+
+/** Logotype vectorisé : jamais retapé au clavier (voir README de l'identité). `decorative` le masque aux lecteurs d'écran. */
+export const Logotype = ({ className, decorative }: { className?: string; decorative?: boolean }) => (
+  <Use
+    id="amane-logotype"
+    viewBox={LOGOTYPE.viewBox}
+    className={className}
+    label={decorative ? undefined : 'Amane — Conciergerie, Paris'}
+  />
 );
-export const Sceau = ({ className }: { className?: string }) => <Raw svg={sceauSvg} className={className} />;
+export const Sceau = ({ className }: { className?: string }) => (
+  <Use id="amane-sceau" viewBox={SCEAU.viewBox} className={className} />
+);

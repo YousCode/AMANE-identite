@@ -5,7 +5,6 @@
   "n3": "La flotte",
   "n4": "Questions",
   "cta": "Faire une demande",
-  "scroll": "Défiler",
   "hk": "Conciergerie privée · Paris",
   "h1": "Toutes les portes de Paris. <em>Une seule clé.</em>",
   "hs": "Voitures d'exception, chauffeurs et séjours sur mesure. Un seul interlocuteur, du premier message à la remise des clés.",
@@ -19,7 +18,7 @@
   "p3t": "Une discrétion totale",
   "p3": "Aucun catalogue en ligne, aucun nom divulgué. Ce qui compte se dit de vive voix.",
   "sk": "Nos services",
-  "st": "Six façons d'ouvrir <em>Paris.</em>",
+  "st": "Dix façons d'ouvrir <em>Paris.</em>",
   "sn": "Chaque prestation fait l'objet d'un devis après un premier échange.",
   "s1": [
    "Voitures d'exception",
@@ -48,7 +47,7 @@
   ],
   "s6": [
    "Conciergerie sur demande",
-   "Tables, palaces, événements, réservations difficiles. Demandez, nous trouvons la porte.",
+   "Palaces, billets, réservations difficiles, envies de dernière minute. Demandez, nous trouvons la porte.",
    "Sur demande"
   ],
   "rk": "Le rituel",
@@ -130,16 +129,13 @@
   "fo2": "Nous ne publions ni tarifs ni catalogue.",
   "it": "Paris, <em>pour le monde entier.</em>",
   "ip": "Délégations, familles, voyageurs d'affaires : nos clients arrivent du Golfe, d'Europe, d'Asie et des Amériques. Nous les accueillons dans leur langue, dès leur arrivée à Paris.",
-  "tags": [
-   "Accueil à Charles-de-Gaulle, Orly et Le Bourget",
-   "Français · English · Español · العربية",
-   "Délégations, familles, voyageurs d'affaires"
-  ],
   "other": "Autre demande",
   "menu": "Menu",
   "close": "Fermer",
   "ask": "Demander ce service",
-  "intl": "International"
+  "intl": "International",
+  "cta2": "Découvrir nos services",
+  "bp": "Rue de Rivoli, sous les arcades, à l'heure où la ville devient lumière. Chaque trajet commence ici."
  },
  "en": {
   "n1": "Services",
@@ -147,7 +143,6 @@
   "n3": "The fleet",
   "n4": "Questions",
   "cta": "Make a request",
-  "scroll": "Scroll",
   "hk": "Private concierge · Paris",
   "h1": "Every door in Paris. <em>One key.</em>",
   "hs": "Exceptional cars, private chauffeurs and tailored stays. A single point of contact, from the first message to the handover of the keys.",
@@ -161,7 +156,7 @@
   "p3t": "Complete discretion",
   "p3": "No online catalogue, no names disclosed. What matters is said in person.",
   "sk": "Our services",
-  "st": "Six ways to open <em>Paris.</em>",
+  "st": "Ten ways to open <em>Paris.</em>",
   "sn": "Every service is quoted after a first conversation.",
   "s1": [
    "Exceptional cars",
@@ -190,7 +185,7 @@
   ],
   "s6": [
    "Concierge on request",
-   "Tables, palaces, events, hard-to-get bookings. Ask, and we will find the door.",
+   "Palaces, tickets, hard-to-get bookings, last-minute wishes. Ask, and we will find the door.",
    "On request"
   ],
   "rk": "The ritual",
@@ -272,16 +267,13 @@
   "fo2": "We publish neither prices nor a catalogue.",
   "it": "Paris, <em>for the whole world.</em>",
   "ip": "Delegations, families, business travellers: our guests arrive from the Gulf, Europe, Asia and the Americas. We welcome them in their own language, from the moment they land in Paris.",
-  "tags": [
-   "Meet-and-greet at Charles de Gaulle, Orly and Le Bourget",
-   "Français · English · Español · العربية",
-   "Delegations, families, business travellers"
-  ],
   "other": "Other request",
   "menu": "Menu",
   "close": "Close",
   "ask": "Request this service",
-  "intl": "International"
+  "intl": "International",
+  "cta2": "Discover our services",
+  "bp": "Rue de Rivoli, under the arcades, at the hour the city turns to light. Every journey begins here."
  },
  "es": {
   "n1": "Servicios",
@@ -289,7 +281,6 @@
   "n3": "La flota",
   "n4": "Preguntas",
   "cta": "Hacer una solicitud",
-  "scroll": "Deslizar",
   "hk": "Concierge privado · París",
   "h1": "Todas las puertas de París. <em>Una sola llave.</em>",
   "hs": "Coches excepcionales, chóferes y estancias a medida. Un único interlocutor, desde el primer mensaje hasta la entrega de las llaves.",
@@ -303,7 +294,7 @@
   "p3t": "Discreción absoluta",
   "p3": "Sin catálogo en línea, sin nombres revelados. Lo importante se dice en persona.",
   "sk": "Nuestros servicios",
-  "st": "Seis maneras de abrir <em>París.</em>",
+  "st": "Diez maneras de abrir <em>París.</em>",
   "sn": "Cada servicio se presupuesta tras una primera conversación.",
   "s1": [
    "Coches excepcionales",
@@ -332,7 +323,7 @@
   ],
   "s6": [
    "Concierge a demanda",
-   "Mesas, hoteles palace, eventos, reservas difíciles. Pídalo y encontraremos la puerta.",
+   "Hoteles palace, entradas, reservas difíciles, deseos de última hora. Pídalo y encontraremos la puerta.",
    "A demanda"
   ],
   "rk": "El ritual",
@@ -414,16 +405,13 @@
   "fo2": "No publicamos precios ni catálogo.",
   "it": "París, <em>para el mundo entero.</em>",
   "ip": "Delegaciones, familias, viajeros de negocios: nuestros clientes llegan del Golfo, de Europa, de Asia y de las Américas. Los recibimos en su idioma, desde su llegada a París.",
-  "tags": [
-   "Recepción en Charles de Gaulle, Orly y Le Bourget",
-   "Français · English · Español · العربية",
-   "Delegaciones, familias, viajeros de negocios"
-  ],
   "other": "Otra solicitud",
   "menu": "Menú",
   "close": "Cerrar",
   "ask": "Solicitar este servicio",
-  "intl": "Internacional"
+  "intl": "Internacional",
+  "cta2": "Descubrir los servicios",
+  "bp": "Rue de Rivoli, bajo los soportales, a la hora en que la ciudad se vuelve luz. Cada trayecto empieza aquí."
  },
  "ar": {
   "n1": "الخدمات",
@@ -431,7 +419,6 @@
   "n3": "الأسطول",
   "n4": "أسئلة شائعة",
   "cta": "قدّم طلبك",
-  "scroll": "مرّر للأسفل",
   "hk": "كونسيرج خاص · باريس",
   "h1": "كل أبواب باريس. <em>بمفتاح واحد.</em>",
   "hs": "سيارات استثنائية، وسائقون خاصون، وإقامات مصمّمة على مقاسك. جهة تواصل واحدة، من أول رسالة حتى تسليم المفاتيح.",
@@ -445,7 +432,7 @@
   "p3t": "سرّية تامة",
   "p3": "لا كتالوج على الإنترنت، ولا أسماء تُكشف. ما يهمّ يُقال وجهاً لوجه.",
   "sk": "خدماتنا",
-  "st": "ست طرق <em>لاكتشاف باريس.</em>",
+  "st": "عشر طرق <em>لاكتشاف باريس.</em>",
   "sn": "كل خدمة بعرض سعر بعد محادثة أولى.",
   "s1": [
    "سيارات استثنائية",
@@ -474,7 +461,7 @@
   ],
   "s6": [
    "كونسيرج عند الطلب",
-   "مطاعم، وفنادق فاخرة، وفعاليات، وحجوزات صعبة. اطلب، ونجد لك الباب.",
+   "فنادق فاخرة، وتذاكر، وحجوزات صعبة، ورغبات اللحظة الأخيرة. اطلب، ونجد لك الباب.",
    "عند الطلب"
   ],
   "rk": "طريقتنا",
@@ -556,15 +543,12 @@
   "fo2": "لا ننشر أسعاراً ولا كتالوجاً.",
   "it": "باريس، <em>للعالم بأسره.</em>",
   "ip": "وفود، وعائلات، ورجال أعمال: يأتي ضيوفنا من الخليج وأوروبا وآسيا والأمريكتين. نستقبلهم بلغتهم منذ لحظة وصولهم إلى باريس.",
-  "tags": [
-   "استقبال في مطارات شارل ديغول وأورلي ولو بورجيه",
-   "Français · English · Español · العربية",
-   "وفود، وعائلات، ورجال أعمال"
-  ],
   "other": "طلب آخر",
   "menu": "القائمة",
   "close": "إغلاق",
   "ask": "اطلب هذه الخدمة",
-  "intl": "دولي"
+  "intl": "دولي",
+  "cta2": "اكتشف خدماتنا",
+  "bp": "شارع ريفولي، تحت الأروقة، في الساعة التي تتحوّل فيها المدينة إلى ضوء. كل رحلة تبدأ من هنا."
  }
 }

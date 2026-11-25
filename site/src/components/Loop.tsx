@@ -3,9 +3,9 @@ import { reducedMotion } from '../ui';
 import { asset } from '../config';
 
 /**
- * Boucle vidéo muette. Rien n'est téléchargé tant que la section est loin :
- * l'affiche arrive à deux écrans de distance, la vidéo à un écran, et la lecture
- * ne tourne que lorsque la section est visible.
+ * Boucle vidéo muette, chargée à la demande : l'affiche arrive à deux écrans de distance,
+ * le téléchargement de la vidéo commence à un écran, et la lecture ne tourne que
+ * lorsque la section est visible. Loin de l'écran, la vidéo est déchargée.
  */
 export function Loop({ name, portrait = '' }: { name: string; portrait?: string }) {
   const ref = useRef<HTMLVideoElement>(null);
@@ -43,8 +43,11 @@ export function Loop({ name, portrait = '' }: { name: string; portrait?: string 
           if (loaded === n) return;
           loaded = n;
           v.onerror = () => {
-            if (canWebm && loaded === n && !v.src.endsWith('.mp4')) v.src = asset(`video/${n}.mp4`);
+            if (!canWebm || loaded !== n || v.src.endsWith('.mp4')) return;
+            v.src = asset(`video/${n}.mp4`);
+            sync();
           };
+          v.preload = 'auto'; // à un écran de distance, on commence à télécharger
           v.src = asset(`video/${n}.${canWebm ? 'webm' : 'mp4'}`);
           sync();
         } else if (loaded) {

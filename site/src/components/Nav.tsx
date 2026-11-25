@@ -1,24 +1,60 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { LANGS, LANG_META, type Dict, type Lang } from '../i18n';
 import { MarkA } from '../brand';
+import { smooth, useScrollFrame } from '../ui';
 
-export type Tone = 'dark' | 'bx' | 'page';
+type Tone = 'dark' | 'bx' | 'page';
 
-export function Nav({ d, lang, tone, fab }: { d: Dict; lang: Lang; tone: Tone; fab: { on: boolean; dark: boolean } }) {
+/**
+ * Barre de navigation, menu plein écran et bouton flottant.
+ * Le ton (clair sur image, bordeaux sur papier) suit la section qui passe sous la barre ;
+ * il est calculé ici pour ne re-rendre que la navigation, pas la page.
+ */
+export function Nav({ d, lang }: { d: Dict; lang: Lang }) {
   const [menu, setMenu] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
+  const [tone, setTone] = useState<Tone>('dark');
+  const [fab, setFab] = useState({ on: false, dark: false });
+  const burger = useRef<HTMLButtonElement>(null);
+  const toned = useRef<HTMLElement[]>([]);
+  const wasOpen = useRef(false);
 
   useEffect(() => {
-    document.body.classList.toggle('menu-open', menu);
-    return () => document.body.classList.remove('menu-open');
+    toned.current = [...document.querySelectorAll<HTMLElement>('[data-tone]')];
+  }, []);
+
+  useScrollFrame(() => {
+    const top = 34;
+    const bottom = innerHeight - 40;
+    let atTop: Tone = 'page';
+    let atBottom: Tone = 'page';
+    for (const s of toned.current) {
+      const r = s.getBoundingClientRect();
+      if (r.top <= top && r.bottom > top) atTop = s.dataset.tone as Tone;
+      if (r.top <= bottom && r.bottom > bottom) atBottom = s.dataset.tone as Tone;
+    }
+    setTone((prev) => (prev === atTop ? prev : atTop));
+    const demande = document.getElementById('demande')?.getBoundingClientRect();
+    const on = scrollY > innerHeight * 0.9 && !!demande && demande.top > innerHeight * 0.85;
+    const dark = atBottom !== 'page';
+    setFab((prev) => (prev.on === on && prev.dark === dark ? prev : { on, dark }));
+  });
+
+  // Menu ouvert : la page derrière ne défile plus et sort de l'ordre de tabulation.
+  useEffect(() => {
+    document.documentElement.classList.toggle('menu-open', menu);
+    for (const el of document.querySelectorAll('main, footer')) el.toggleAttribute('inert', menu);
+    if (menu) smooth.lenis?.stop();
+    else smooth.lenis?.start();
+    if (wasOpen.current && !menu) burger.current?.focus();
+    wasOpen.current = menu;
   }, [menu]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setMenu(false);
-        setLangOpen(false);
-      }
+      if (e.key !== 'Escape') return;
+      setMenu(false);
+      setLangOpen(false);
     };
     const onClick = (e: MouseEvent) => {
       if (!(e.target as Element).closest('.lang')) setLangOpen(false);
@@ -36,18 +72,22 @@ export function Nav({ d, lang, tone, fab }: { d: Dict; lang: Lang; tone: Tone; f
     ['#services', d.n1],
     ['#rituel', d.n2],
     ['#flotte', d.n3],
+    ['#jeu', d.jk],
     ['#questions', d.n4],
     ['#demande', d.cta],
   ];
+  const state = menu || tone === 'page' ? 'solid' : tone === 'dark' ? 'ondark' : 'onbx';
+  const fabOn = fab.on && !menu;
 
   return (
     <>
-      <header className={`nav ${menu ? 'solid' : tone === 'page' ? 'solid' : tone === 'dark' ? 'ondark' : 'onbx'}`}>
+      <header className={`nav ${state}`}>
         <div className="in">
           <div className="side">
             <button
               className="menub"
               type="button"
+              ref={burger}
               aria-expanded={menu}
               aria-controls="mmenu"
               onClick={() => setMenu(!menu)}
@@ -58,9 +98,8 @@ export function Nav({ d, lang, tone, fab }: { d: Dict; lang: Lang; tone: Tone; f
             <div className={`lang${langOpen ? ' open' : ''}`}>
               <button
                 type="button"
-                aria-haspopup="true"
                 aria-expanded={langOpen}
-                aria-label={d.langLabel}
+                aria-label={`${d.langLabel} : ${LANG_META[lang].name}`}
                 onClick={() => setLangOpen(!langOpen)}
               >
                 <span>{LANG_META[lang].short}</span>
@@ -108,11 +147,7 @@ export function Nav({ d, lang, tone, fab }: { d: Dict; lang: Lang; tone: Tone; f
         </div>
       </div>
 
-      <a
-        className={`btn fab${fab.on && !menu ? ' on' : ''}${fab.dark ? ' onbx' : ''}`}
-        href="#demande"
-        tabIndex={fab.on ? 0 : -1}
-      >
+      <a className={`btn fab${fabOn ? ' on' : ''}${fab.dark ? ' onbx' : ''}`} href="#demande" tabIndex={fabOn ? 0 : -1}>
         {d.cta}
       </a>
     </>

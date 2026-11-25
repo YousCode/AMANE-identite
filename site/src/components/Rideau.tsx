@@ -5,6 +5,8 @@ import { reducedMotion } from '../ui';
 const MIN_MS = 1700; // le temps que le monogramme finisse de se tracer
 const MAX_MS = 4000; // au-delà, on ouvre quoi qu'il arrive
 
+const SEEN = 'amane-vu'; // lu aussi par le script en ligne de index.html
+
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 /**
@@ -16,7 +18,14 @@ export function Rideau() {
   useEffect(() => {
     const root = document.documentElement;
     if (root.classList.contains('pret')) return;
-    const open = () => root.classList.add('pret');
+    const open = () => {
+      root.classList.add('pret');
+      try {
+        sessionStorage.setItem(SEEN, '1'); // les pages suivantes s'ouvrent sans rideau
+      } catch {
+        /* stockage indisponible : le rideau rejouera, sans gravité */
+      }
+    };
     if (reducedMotion()) return open();
 
     const img = document.querySelector<HTMLImageElement>('.hero img.door');

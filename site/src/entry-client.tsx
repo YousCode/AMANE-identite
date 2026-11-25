@@ -5,6 +5,9 @@ import { APERCU } from './config';
 import { LANGS, LANG_META, langFromPath, type Lang } from './i18n';
 import './styles.css';
 
+// Signale au script en ligne de index.html que l'application a démarré.
+document.documentElement.classList.add('charge');
+
 const el = document.getElementById('root')!;
 const app = (lang: Lang) => (
   <StrictMode>

@@ -16,6 +16,9 @@ const css = fs
   .replace(/url\((["']?)\.\.\//g, 'url($1')
   .replace(/url\((["']?)\.\//g, 'url($1assets/')
   .replace(/url\((["']?)(?!data:|assets\/|img\/|https?:)([\w-]+\.woff2?)/g, 'url($1assets/$2');
+// Le script de garde (classe « js », rideau, filet de sécurité) vient de index.html : une seule source.
+const guard = /<script>([\s\S]*?)<\/script>/.exec(fs.readFileSync(path.join(dist, 'index.html'), 'utf8'))?.[1];
+if (!guard) throw new Error('Aperçu : script de garde introuvable dans index.html');
 const js = fs.readFileSync(path.join(dist, 'assets', jsFiles[0]), 'utf8').replace(/<\/script/gi, '<\\/script');
 
 const page = `<title>Amane</title>
@@ -23,7 +26,7 @@ const page = `<title>Amane</title>
 <meta name="theme-color" content="#3B0C15">
 <style>${css}
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
-<script>(function(h){h.classList.add('js');setTimeout(function(){if(!h.classList.contains('pret'))h.classList.remove('js')},7000)})(document.documentElement)</script>
+<script>${guard}</script>
 <div id="root"></div>
 <script type="module">${js}</script>
 `;

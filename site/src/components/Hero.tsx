@@ -25,6 +25,7 @@ export function Hero({ d }: { d: Dict }) {
     const step = innerWidth < 761 ? 2 : 1;
     const list: number[] = [];
     for (let n = 1; n <= FRAMES; n += step) list.push(n);
+    if (list[list.length - 1] !== FRAMES) list.push(FRAMES); // la porte grande ouverte, toujours
     let cancelled = false;
     let next = 0;
     const loadNext = () => {
@@ -68,7 +69,8 @@ export function Hero({ d }: { d: Dict }) {
     if (copy.current) {
       copy.current.style.opacity = String(1 - fade);
       copy.current.style.transform = `translate3d(0,${-fade * 40}px,0)`;
-      copy.current.style.pointerEvents = fade > 0.9 ? 'none' : '';
+      // Invisible = hors de l'ordre de tabulation.
+      copy.current.style.visibility = fade >= 1 ? 'hidden' : '';
     }
 
     // Image la plus proche déjà chargée, en reculant si la cible n'est pas encore là.

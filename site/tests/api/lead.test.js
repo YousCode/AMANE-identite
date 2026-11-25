@@ -1,4 +1,4 @@
-// Tests de /api/lead — à lancer avec : node --test site/tests/api/
+// Tests de /api/lead — à lancer avec : npm test (node --test tests/api/*.test.js)
 // Aucune requête réseau : fetch est toujours simulé.
 
 import { test, describe, beforeEach } from 'node:test';
@@ -7,7 +7,7 @@ import { Readable } from 'node:stream';
 
 import handler from '../../api/lead.js';
 import { processLead, _viderLimite, BREVO_URL } from '../../api/_lib/lead-core.js';
-import { teamEmail, ackEmail } from '../../api/_lib/emails.js';
+import { teamEmail, ackEmail, SERVICES } from '../../api/_lib/emails.js';
 
 const CLE = 'xkeysib-cle-de-test-0123456789';
 const ENV = {
@@ -19,12 +19,12 @@ const DEMANDE = {
   nom: 'Jeanne Martin',
   email: 'jeanne.martin@example.com',
   tel: '+33 6 12 34 56 78',
-  service: 'Chauffeur',
-  date: '12 décembre, 19 h',
+  service: 'chauffeur',
+  date: '2026-12-12',
   passagers: '2',
   langue: 'fr',
   message: 'Un transfert depuis Roissy.\nMerci.',
-  website: '',
+  a_laisser_vide: '',
 };
 
 /**
@@ -65,28 +65,72 @@ function capterErreurs(t) {
   return lignes;
 }
 
+/** Même chose pour console.warn (signalement du pot de miel). */
+function capterAlertes(t) {
+  const lignes = [];
+  t.mock.method(console, 'warn', (...args) => lignes.push(args.join(' ')));
+  return lignes;
+}
+
+/** Texte visible d'un e-mail HTML, balises retirées. */
+function sansBalises(html) {
+  return html.replace(/<[^>]*>/g, ' ');
+}
+
 beforeEach(() => _viderLimite());
 
 // ---------------------------------------------------------------------------
 describe('pot de miel', () => {
-  test('website rempli → 200 {ok:true} sans aucun envoi', async () => {
-    const r = await envoyer({ website: 'https://spam.example' });
+  test('a_laisser_vide rempli → 200 {ok:true} sans aucun envoi, avec un signalement', async (t) => {
+    const alertes = capterAlertes(t);
+    const r = await envoyer({ a_laisser_vide: 'https://spam.example' });
+    assert.equal(r.status, 200);
+    assert.deepEqual(r.json, { ok: true });
+    assert.equal(r.appels.length, 0);
+    assert.deepEqual(alertes, ['[lead] pot de miel']);
+  });
+
+  test('le piège passe avant la validation et avant la configuration', async (t) => {
+    capterAlertes(t);
+    const r = await envoyer({ a_laisser_vide: 'x', email: '', tel: '' }, { env: {} });
     assert.equal(r.status, 200);
     assert.deepEqual(r.json, { ok: true });
     assert.equal(r.appels.length, 0);
   });
 
-  test('le piège passe avant la validation et avant la configuration', async () => {
-    const r = await envoyer({ website: 'x', email: '', tel: '' }, { env: {} });
-    assert.equal(r.status, 200);
-    assert.deepEqual(r.json, { ok: true });
-    assert.equal(r.appels.length, 0);
+  test('le signalement ne contient aucune donnée de la demande', async (t) => {
+    const alertes = capterAlertes(t);
+    await envoyer({ a_laisser_vide: 'VALEUR-DU-ROBOT', message: 'SECRET-DU-CLIENT' });
+    assert.equal(alertes.length, 1);
+    for (const interdit of [
+      'VALEUR-DU-ROBOT',
+      'SECRET-DU-CLIENT',
+      'Jeanne',
+      'jeanne.martin@example.com',
+      '+33',
+      '203.0.113',
+    ]) {
+      assert.ok(!alertes[0].includes(interdit), interdit);
+    }
   });
 
-  test('website vide ou fait d’espaces ne déclenche pas le piège', async () => {
-    const r = await envoyer({ website: '   ' });
+  test('a_laisser_vide vide ou fait d’espaces ne déclenche pas le piège', async (t) => {
+    const alertes = capterAlertes(t);
+    const r = await envoyer({ a_laisser_vide: '   ' });
     assert.deepEqual(r.json, { ok: true, ack: true });
     assert.equal(r.appels.length, 2);
+    assert.equal(alertes.length, 0);
+  });
+
+  test('l’ancien champ « website » rempli n’empêche plus l’envoi', async (t) => {
+    const alertes = capterAlertes(t);
+    const r = await envoyer({ website: 'https://www.exemple-du-client.fr' });
+    assert.equal(r.status, 200);
+    assert.deepEqual(r.json, { ok: true, ack: true });
+    assert.equal(r.appels.length, 2);
+    assert.equal(alertes.length, 0);
+    // … et sa valeur n'est reprise nulle part.
+    for (const { corps } of r.appels) assert.ok(!JSON.stringify(corps).includes('exemple-du-client'));
   });
 });
 
@@ -171,20 +215,15 @@ describe('validation', () => {
   test('tailles maximales et caractères de contrôle', async () => {
     const r = await envoyer({
       nom: '  ' + 'N'.repeat(300) + '  ',
-      service: 'S'.repeat(300),
-      date: 'D'.repeat(300),
-      passagers: '9'.repeat(30),
+      tel: '0'.repeat(300),
       message: 'Bonjour\u0000\u0007 à vous\u202E\r\n' + 'm'.repeat(6000),
     });
     assert.equal(r.status, 200);
     const [equipe] = r.appels;
     assert.ok(equipe.corps.subject.includes('N'.repeat(120)));
     assert.ok(!equipe.corps.subject.includes('N'.repeat(121)));
-    assert.ok(equipe.corps.subject.includes('S'.repeat(80)));
-    assert.ok(!equipe.corps.subject.includes('S'.repeat(81)));
     const texte = equipe.corps.textContent;
-    assert.ok(texte.includes('D'.repeat(40)) && !texte.includes('D'.repeat(41)));
-    assert.ok(texte.includes('9'.repeat(8)) && !texte.includes('9'.repeat(9)));
+    assert.ok(texte.includes('0'.repeat(40)) && !texte.includes('0'.repeat(41)));
     assert.ok(texte.includes('Bonjour à vous\n'));
     assert.ok(!texte.includes('m'.repeat(4000)));
     assert.ok(!/[\u0000-\u0009\u000B-\u001F\u007F\u202E]/.test(texte));
@@ -195,10 +234,234 @@ describe('validation', () => {
     const r = await envoyer({ nom: { a: 1 }, service: ['x'], passagers: 3, message: null });
     assert.equal(r.status, 200);
     const [equipe] = r.appels;
-    assert.equal(equipe.corps.subject, 'Nouvelle demande — Service non précisé — Nom non précisé');
+    assert.equal(equipe.corps.subject, 'Nouvelle demande — Autre demande — Nom non précisé');
     assert.ok(equipe.corps.textContent.includes('Passagers : 3'));
     assert.ok(!equipe.corps.htmlContent.includes('[object Object]'));
   });
+});
+
+// ---------------------------------------------------------------------------
+describe('champs fermés : service, date, passagers', () => {
+  const LIBELLES = {
+    fr: [
+      "Voitures d'exception",
+      'Chauffeur privé',
+      'Van VIP',
+      'Séjours clé en main',
+      'Immobilier',
+      'Tables & restaurants',
+      'Événements',
+      'Personal shopping',
+      'Séjour esthétique',
+      'Conciergerie sur demande',
+      'Autre demande',
+    ],
+    en: [
+      'Exceptional cars',
+      'Private chauffeur',
+      'VIP van',
+      'Turnkey stays',
+      'Real estate',
+      'Tables & restaurants',
+      'Events',
+      'Personal shopping',
+      'Aesthetic stay',
+      'Concierge on request',
+      'Other request',
+    ],
+    es: [
+      'Coches excepcionales',
+      'Chófer privado',
+      'Van VIP',
+      'Estancias llave en mano',
+      'Inmobiliaria',
+      'Mesas y restaurantes',
+      'Eventos',
+      'Personal shopping',
+      'Estancia estética',
+      'Concierge a demanda',
+      'Otra solicitud',
+    ],
+    ar: [
+      'سيارات استثنائية',
+      'سائق خاص',
+      'فان VIP',
+      'إقامات متكاملة',
+      'العقارات',
+      'المطاعم والحجوزات',
+      'الفعاليات',
+      'التسوّق الشخصي',
+      'إقامة تجميلية',
+      'كونسيرج عند الطلب',
+      'طلب آخر',
+    ],
+  };
+
+  test('la liste des identifiants est celle du formulaire, dans le même ordre', () => {
+    assert.deepEqual(SERVICES, [
+      'voitures',
+      'chauffeur',
+      'van',
+      'sejours',
+      'immobilier',
+      'tables',
+      'evenements',
+      'shopping',
+      'esthetique',
+      'conciergerie',
+      'autre',
+    ]);
+    for (const langue of ['fr', 'en', 'es', 'ar']) assert.equal(LIBELLES[langue].length, SERVICES.length);
+  });
+
+  test('chaque identifiant donne son libellé : français pour l’équipe, langue du client pour l’accusé', () => {
+    SERVICES.forEach((service, i) => {
+      const equipe = teamEmail({ ...DEMANDE, service });
+      assert.equal(equipe.subject, `Nouvelle demande — ${LIBELLES.fr[i]} — Jeanne Martin`);
+      assert.ok(equipe.text.includes(`Service : ${LIBELLES.fr[i]}`));
+      for (const langue of ['fr', 'en', 'es', 'ar']) {
+        const accuse = ackEmail({ ...DEMANDE, service, langue });
+        assert.ok(accuse.text.includes(LIBELLES[langue][i]), `${service} / ${langue} (texte)`);
+        assert.ok(
+          sansBalises(accuse.html).includes(LIBELLES[langue][i].replace('&', '&amp;').replace("'", '&#39;')),
+          `${service} / ${langue}`,
+        );
+      }
+    });
+  });
+
+  const NOUVEAUX = {
+    immobilier: { fr: 'Immobilier', en: 'Real estate', es: 'Inmobiliaria', ar: 'العقارات' },
+    tables: {
+      fr: 'Tables & restaurants',
+      en: 'Tables & restaurants',
+      es: 'Mesas y restaurantes',
+      ar: 'المطاعم والحجوزات',
+    },
+    evenements: { fr: 'Événements', en: 'Events', es: 'Eventos', ar: 'الفعاليات' },
+  };
+
+  for (const [service, libelles] of Object.entries(NOUVEAUX)) {
+    for (const langue of ['fr', 'en', 'es', 'ar']) {
+      test(`service « ${service} », client ${langue} : libellé français pour l’équipe, « ${libelles[langue]} » dans l’accusé`, async () => {
+        const r = await envoyer({ service, langue });
+        assert.deepEqual(r.json, { ok: true, ack: true });
+        const [equipe, accuse] = r.appels;
+        const html = (texte) => texte.replace('&', '&amp;');
+
+        assert.equal(equipe.corps.subject, `Nouvelle demande — ${libelles.fr} — Jeanne Martin`);
+        assert.ok(equipe.corps.textContent.includes(`Service : ${libelles.fr}\n`));
+        assert.ok(equipe.corps.htmlContent.includes(`>${html(libelles.fr)}</span>`));
+
+        assert.ok(accuse.corps.textContent.includes(libelles[langue]));
+        assert.ok(accuse.corps.htmlContent.includes(`>${html(libelles[langue])}</span>`));
+        assert.ok(!accuse.corps.textContent.includes('Autre demande'));
+      });
+    }
+  }
+
+  test('« & » du libellé « Tables & restaurants » : échappé dans le HTML, intact dans le sujet et le texte', async () => {
+    for (const langue of ['fr', 'en']) {
+      _viderLimite();
+      const r = await envoyer({ service: 'tables', langue });
+      const [equipe, accuse] = r.appels;
+      assert.equal(equipe.corps.subject, 'Nouvelle demande — Tables & restaurants — Jeanne Martin');
+      for (const { corps } of r.appels) {
+        assert.ok(corps.textContent.includes('Tables & restaurants'));
+        assert.ok(!corps.textContent.includes('&amp;'));
+        assert.ok(corps.htmlContent.includes('Tables &amp; restaurants'));
+        assert.ok(!corps.htmlContent.includes('Tables & restaurants'), 'aucun « & » nu dans le HTML');
+        // Aucun « & » du HTML qui ne soit le début d'une entité.
+        assert.ok(!/&(?!(?:amp|lt|gt|quot|nbsp|#39);)/.test(corps.htmlContent));
+      }
+      assert.ok(accuse.corps.subject.includes('Amane'));
+    }
+  });
+
+  for (const service of [
+    'Location de yacht',
+    'chauffeur privé',
+    '<b>van</b>',
+    'chauffeur\nSubject: gagné',
+    '',
+    undefined,
+    42,
+    ['van'],
+  ]) {
+    test(`service inconnu ${JSON.stringify(service)} → « autre »`, async () => {
+      const r = await envoyer({ service });
+      assert.equal(r.status, 200);
+      const [equipe, accuse] = r.appels;
+      assert.equal(equipe.corps.subject, 'Nouvelle demande — Autre demande — Jeanne Martin');
+      assert.ok(equipe.corps.textContent.includes('Service : Autre demande'));
+      assert.ok(accuse.corps.textContent.includes('Service : Autre demande'));
+      if (typeof service === 'string' && service.trim()) {
+        const saisie = service.split('\n')[0];
+        for (const { corps } of r.appels) {
+          assert.ok(!corps.subject.includes(saisie));
+          assert.ok(!corps.textContent.includes(saisie), 'la valeur saisie n’est reprise nulle part');
+        }
+      }
+    });
+  }
+
+  test('identifiant connu accepté quelle que soit la casse', async () => {
+    const r = await envoyer({ service: ' Van ' });
+    assert.equal(r.appels[0].corps.subject, 'Nouvelle demande — Van VIP — Jeanne Martin');
+  });
+
+  for (const date of [
+    '12 décembre, 19 h',
+    '12/12/2026',
+    '2026-12-12T19:00',
+    '2026-12-12 <b>soir</b>',
+    '2026-1-5',
+    '2026-02-30',
+    '2025-02-29',
+    '2026-13-01',
+    '2026-00-10',
+    '0000-01-01',
+    'demain\nBcc: x@y.z',
+    20261212,
+    null,
+  ]) {
+    test(`date invalide ${JSON.stringify(date)} → ignorée`, async () => {
+      const r = await envoyer({ date });
+      assert.equal(r.status, 200, 'une date invalide ne bloque pas la demande');
+      const [equipe, accuse] = r.appels;
+      assert.ok(equipe.corps.textContent.includes('Date : —'));
+      assert.ok(!accuse.corps.textContent.includes('Date'));
+      assert.ok(!sansBalises(accuse.corps.htmlContent).includes('Date'));
+      if (typeof date === 'string') {
+        for (const { corps } of r.appels) assert.ok(!corps.textContent.includes(date.split('\n')[0]));
+      }
+    });
+  }
+
+  test('date valide : écrite en toutes lettres, y compris un 29 février bissextile', async () => {
+    const r = await envoyer({ date: '2028-02-29' });
+    assert.ok(r.appels[0].corps.textContent.includes('Date : 29 février 2028'));
+    assert.ok(r.appels[1].corps.textContent.includes('Date : 29 février 2028'));
+  });
+
+  for (const passagers of ['0', '8', '9', '10', '12', '-1', '2.5', 'deux', '8 +', '99999999', '2 <b>', 0, 8, null]) {
+    test(`passagers invalides ${JSON.stringify(passagers)} → ignorés`, async () => {
+      const r = await envoyer({ passagers });
+      assert.equal(r.status, 200);
+      const [equipe, accuse] = r.appels;
+      assert.ok(equipe.corps.textContent.includes('Passagers : —'));
+      assert.ok(!accuse.corps.textContent.includes('Passagers'));
+    });
+  }
+
+  for (const passagers of ['1', '2', '3', '4', '5', '6', '7', '8+', 5]) {
+    test(`passagers valides ${JSON.stringify(passagers)}`, async () => {
+      const r = await envoyer({ passagers });
+      const [equipe, accuse] = r.appels;
+      assert.ok(equipe.corps.textContent.includes(`Passagers : ${passagers}\n`));
+      assert.ok(accuse.corps.textContent.includes(`Passagers : ${passagers}\n`));
+    });
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -291,13 +554,13 @@ describe('envoi', () => {
     const [equipe, accuse] = r.appels;
     assert.deepEqual(equipe.corps.to, [{ email: 'equipe@amane.test' }]);
     assert.deepEqual(equipe.corps.replyTo, { email: 'jeanne.martin@example.com', name: 'Jeanne Martin' });
-    assert.equal(equipe.corps.subject, 'Nouvelle demande — Chauffeur — Jeanne Martin');
+    assert.equal(equipe.corps.subject, 'Nouvelle demande — Chauffeur privé — Jeanne Martin');
     for (const valeur of [
       'Jeanne Martin',
       'jeanne.martin@example.com',
       '+33 6 12 34 56 78',
-      'Chauffeur',
-      '12 décembre, 19 h',
+      'Chauffeur privé',
+      '12 décembre 2026',
       'Un transfert depuis Roissy.',
     ]) {
       assert.ok(equipe.corps.htmlContent.includes(valeur), `HTML équipe : ${valeur}`);
@@ -305,12 +568,21 @@ describe('envoi', () => {
     }
     assert.ok(equipe.corps.htmlContent.includes('Un transfert depuis Roissy.<br>Merci.'));
 
-    assert.deepEqual(accuse.corps.to, [{ email: 'jeanne.martin@example.com', name: 'Jeanne Martin' }]);
+    assert.deepEqual(
+      accuse.corps.to,
+      [{ email: 'jeanne.martin@example.com' }],
+      'pas de nom saisi dans le destinataire',
+    );
     assert.equal(accuse.corps.replyTo, undefined);
     assert.ok(accuse.corps.subject.includes('Amane'));
     assert.ok(accuse.corps.htmlContent.includes('Nous avons bien reçu votre demande.'));
     assert.ok(accuse.corps.textContent.includes('Nous avons bien reçu votre demande.'));
-    assert.ok(accuse.corps.textContent.includes('Chauffeur'));
+    for (const valeur of ['Service : Chauffeur privé', 'Date : 12 décembre 2026', 'Passagers : 2']) {
+      assert.ok(accuse.corps.textContent.includes(valeur), `texte accusé : ${valeur}`);
+    }
+    for (const valeur of ['Chauffeur privé', '12 décembre 2026']) {
+      assert.ok(accuse.corps.htmlContent.includes(valeur), `HTML accusé : ${valeur}`);
+    }
   });
 
   test('téléphone seul : un seul e-mail, sans replyTo, ack:false', async () => {
@@ -327,7 +599,7 @@ describe('envoi', () => {
     assert.deepEqual(r.json, { ok: true, ack: true });
     assert.deepEqual(r.appels[0].corps.replyTo, { email: 'jeanne.martin@example.com' });
     assert.deepEqual(r.appels[1].corps.to, [{ email: 'jeanne.martin@example.com' }]);
-    assert.equal(r.appels[0].corps.subject, 'Nouvelle demande — Chauffeur — Nom non précisé');
+    assert.equal(r.appels[0].corps.subject, 'Nouvelle demande — Chauffeur privé — Nom non précisé');
   });
 
   test('plusieurs destinataires dans LEAD_TO_EMAIL', async () => {
@@ -390,10 +662,34 @@ describe('envoi', () => {
 // ---------------------------------------------------------------------------
 describe('accusé de réception', () => {
   const attendus = {
-    fr: { dir: 'ltr', phrase: 'Nous avons bien reçu votre demande.', signature: 'Amane — Conciergerie privée · Paris' },
-    en: { dir: 'ltr', phrase: 'We have received your request.', signature: 'Amane — Private concierge · Paris' },
-    es: { dir: 'ltr', phrase: 'Hemos recibido su solicitud.', signature: 'Amane — Conserjería privada · París' },
-    ar: { dir: 'rtl', phrase: 'تلقّينا طلبكم', signature: 'Amane — ' },
+    fr: {
+      dir: 'ltr',
+      phrase: 'Nous avons bien reçu votre demande.',
+      signature: 'Amane — Conciergerie privée · Paris',
+      service: 'Chauffeur privé',
+      date: '12 décembre 2026',
+    },
+    en: {
+      dir: 'ltr',
+      phrase: 'We have received your request.',
+      signature: 'Amane — Private concierge · Paris',
+      service: 'Private chauffeur',
+      date: '12 December 2026',
+    },
+    es: {
+      dir: 'ltr',
+      phrase: 'Hemos recibido su solicitud.',
+      signature: 'Amane — Conserjería privada · París',
+      service: 'Chófer privado',
+      date: '12 de diciembre de 2026',
+    },
+    ar: {
+      dir: 'rtl',
+      phrase: 'تلقّينا طلبكم',
+      signature: 'Amane — ',
+      service: 'سائق خاص',
+      date: '12 ديسمبر 2026',
+    },
   };
 
   for (const [langue, a] of Object.entries(attendus)) {
@@ -405,6 +701,10 @@ describe('accusé de réception', () => {
       assert.ok(accuse.textContent.includes(a.phrase));
       assert.ok(accuse.htmlContent.includes(a.signature));
       assert.ok(accuse.textContent.includes(a.signature));
+      for (const valeur of [a.service, a.date]) {
+        assert.ok(accuse.htmlContent.includes(valeur), `HTML : ${valeur}`);
+        assert.ok(accuse.textContent.includes(valeur), `texte : ${valeur}`);
+      }
       assert.ok(accuse.subject.includes('Amane'), '« Amane » n’est jamais traduit');
       assert.equal(accuse.htmlContent.includes('dir="rtl"'), langue === 'ar');
       // L'e-mail à l'équipe reste en français, mais indique la langue du client.
@@ -450,11 +750,44 @@ describe('accusé de réception', () => {
     }
   });
 
-  test('le message repris dans l’accusé est tronqué, pas celui de l’équipe', async () => {
-    const r = await envoyer({ message: 'a'.repeat(3000) });
-    assert.ok(r.appels[0].corps.textContent.includes('a'.repeat(3000)));
-    assert.ok(r.appels[1].corps.textContent.includes('a'.repeat(1000) + '…'));
-    assert.ok(!r.appels[1].corps.textContent.includes('a'.repeat(1001)));
+  test('l’accusé ne contient ni le nom ni le message, même inoffensifs', async () => {
+    const r = await envoyer({ nom: 'Camille Durand', message: 'Bonjour, une voiture pour samedi soir.' });
+    assert.deepEqual(r.json, { ok: true, ack: true });
+    const [equipe, accuse] = r.appels;
+    // L'équipe, elle, reçoit tout.
+    for (const valeur of ['Camille Durand', 'Bonjour, une voiture pour samedi soir.', '+33 6 12 34 56 78']) {
+      assert.ok(equipe.corps.textContent.includes(valeur), `équipe : ${valeur}`);
+      assert.ok(equipe.corps.htmlContent.includes(valeur), `équipe (HTML) : ${valeur}`);
+    }
+    const envoi = JSON.stringify(accuse.corps);
+    for (const interdit of ['Camille', 'Durand', 'Bonjour', 'voiture pour samedi', 'samedi', '+33 6 12', '34 56 78']) {
+      assert.ok(!envoi.includes(interdit), `l’accusé ne doit pas contenir « ${interdit} »`);
+    }
+    assert.deepEqual(accuse.corps.to, [{ email: 'jeanne.martin@example.com' }]);
+    assert.deepEqual(Object.keys(accuse.corps).sort(), ['htmlContent', 'sender', 'subject', 'textContent', 'to']);
+  });
+
+  test('l’accusé est identique quels que soient le nom, le message et le téléphone', async () => {
+    const a = await envoyer({ nom: 'A', message: 'un', tel: '+33 1 11 11 11 11' });
+    _viderLimite();
+    const b = await envoyer({ nom: 'Tout autre nom', message: 'https://pirate.example gagnez 1000 €', tel: '' });
+    assert.deepEqual(a.appels[1].corps, b.appels[1].corps);
+  });
+
+  test('ackEmail appelée directement avec des valeurs brutes ne reprend rien de libre', () => {
+    for (const langue of ['fr', 'en', 'es', 'ar']) {
+      const { subject, html, text } = ackEmail({
+        langue,
+        nom: 'NOM-LIBRE',
+        message: 'MESSAGE-LIBRE',
+        tel: 'TEL-LIBRE',
+        service: 'SERVICE-LIBRE',
+        date: 'DATE-LIBRE',
+        passagers: 'PASSAGERS-LIBRES',
+        email: 'a@example.com',
+      });
+      assert.ok(!/LIBRE/.test(subject + html + text), langue);
+    }
   });
 });
 
@@ -462,24 +795,34 @@ describe('accusé de réception', () => {
 describe('sécurité du contenu', () => {
   test('échappement HTML des valeurs saisies', async () => {
     const r = await envoyer({
-      nom: 'Jean <b>Gras</b> & "Fils"',
+      nom: 'Jean <b>Gras</b> & "Fils" l\'aîné',
+      tel: '+33 6 12 34 56 78 <i>soir</i>',
       service: '<img src=x onerror=alert(1)>',
-      date: "12/12 <i>soir</i> l'après-midi",
+      date: '<svg onload=alert(1)>',
+      passagers: '<u>2</u>',
       message: 'Bonjour <script>alert("xss")</script>\n<a href="https://pirate.example">cliquez</a>',
     });
     assert.equal(r.status, 200);
+    const [equipe, accuse] = r.appels;
     for (const { corps } of r.appels) {
       const html = corps.htmlContent;
       assert.ok(!html.includes('<script'), 'pas de balise script');
       assert.ok(!html.includes('<img'), 'pas de balise img');
+      assert.ok(!html.includes('<svg'), 'pas de balise svg');
       assert.ok(!html.includes('<b>Gras</b>'));
       assert.ok(!html.includes('<i>soir</i>'));
+      assert.ok(!html.includes('<u>2</u>'));
       assert.ok(!html.includes('href="https://pirate.example"'));
-      assert.ok(html.includes('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;'));
-      assert.ok(html.includes('Jean &lt;b&gt;Gras&lt;/b&gt; &amp; &quot;Fils&quot;'));
-      assert.ok(html.includes('l&#39;après-midi'));
-      // La version texte, elle, garde la saisie telle quelle.
-      assert.ok(corps.textContent.includes('<script>alert("xss")</script>'));
+    }
+    const html = equipe.corps.htmlContent;
+    assert.ok(html.includes('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;'));
+    assert.ok(html.includes('Jean &lt;b&gt;Gras&lt;/b&gt; &amp; &quot;Fils&quot; l&#39;aîné'));
+    assert.ok(html.includes('&lt;i&gt;soir&lt;/i&gt;'));
+    // La version texte de l'e-mail équipe, elle, garde la saisie telle quelle.
+    assert.ok(equipe.corps.textContent.includes('<script>alert("xss")</script>'));
+    // L'accusé ne reprend rien de tout cela, sous aucune forme.
+    for (const interdit of ['script', 'Gras', 'pirate', 'onerror', 'onload', 'soir']) {
+      assert.ok(!JSON.stringify(accuse.corps).includes(interdit), interdit);
     }
   });
 
@@ -489,14 +832,9 @@ describe('sécurité du contenu', () => {
     const [equipe, accuse] = r.appels;
     assert.equal(
       equipe.corps.subject,
-      'Nouvelle demande — Chauffeur — Jean Dupont Bcc: pirate@example.com Corps forgé',
+      'Nouvelle demande — Chauffeur privé — Jean Dupont Bcc: pirate@example.com Corps forgé',
     );
-    for (const valeur of [
-      equipe.corps.subject,
-      equipe.corps.replyTo.name,
-      accuse.corps.subject,
-      accuse.corps.to[0].name,
-    ]) {
+    for (const valeur of [equipe.corps.subject, equipe.corps.replyTo.name, accuse.corps.subject]) {
       assert.ok(!/[\r\n\u2028\u2029]/.test(valeur), JSON.stringify(valeur));
     }
     for (const { corps } of r.appels) {
@@ -510,15 +848,16 @@ describe('sécurité du contenu', () => {
       assert.equal('cc' in corps, false);
     }
     assert.deepEqual(equipe.corps.to, [{ email: 'equipe@amane.test' }]);
-    assert.equal(accuse.corps.to.length, 1);
+    assert.deepEqual(accuse.corps.to, [{ email: 'jeanne.martin@example.com' }]);
+    assert.ok(!JSON.stringify(accuse.corps).includes('pirate@example.com'));
   });
 
-  test('injection d’en-tête par le service, la date ou des séparateurs Unicode', async () => {
+  test('injection d’en-tête par le service ou des séparateurs Unicode', async () => {
     const r = await envoyer({
-      service: 'Chauffeur\nSubject: gagné',
+      service: 'chauffeur\nSubject: gagné',
       nom: 'Jean\u2028Dupont\u0085fin\tici',
     });
-    assert.equal(r.appels[0].corps.subject, 'Nouvelle demande — Chauffeur Subject: gagné — Jean Dupont fin ici');
+    assert.equal(r.appels[0].corps.subject, 'Nouvelle demande — Autre demande — Jean Dupont fin ici');
   });
 
   test('injection d’en-tête par l’e-mail → 400 email_invalide', async () => {
@@ -568,10 +907,11 @@ describe('limite de débit', () => {
     assert.equal(plusTard.status, 200);
   });
 
-  test('les demandes refusées avant l’envoi ne consomment pas le quota', async () => {
+  test('les demandes refusées avant l’envoi ne consomment pas le quota', async (t) => {
+    capterAlertes(t);
     for (let i = 0; i < 10; i++) {
       await envoyer({ email: 'invalide' }, { ip: '198.51.100.9' });
-      await envoyer({ website: 'robot' }, { ip: '198.51.100.9' });
+      await envoyer({ a_laisser_vide: 'robot' }, { ip: '198.51.100.9' });
     }
     const r = await envoyer({}, { ip: '198.51.100.9' });
     assert.equal(r.status, 200);

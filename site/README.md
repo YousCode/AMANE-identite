@@ -10,23 +10,25 @@ npm install
 npm run dev        # http://localhost:5173 (et /en/, /es/, /ar/)
 npm run build      # dist/ : pages HTML, plan du site, robots.txt
 npm run preview    # sert dist/ sur http://localhost:4173
-npm test           # 69 tests de la fonction /api/lead
+npm test           # tests de la fonction /api/lead
 npm run apercu     # dist-apercu/ : page autonome, pour montrer le site sans hébergement
 npm run format     # met en forme tout le code (Prettier)
 ```
 
 ## Contenu
 
-| Chemin                                          | Rôle                                                                                             |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `src/App.tsx`, `src/components/`                | La page : ouverture (porte cochère), maison, services, films, rituel, flotte, questions, demande |
-| `src/i18n-base.json`, `src/i18n.ts`             | Tous les textes, en français, anglais, espagnol et arabe                                         |
-| `src/styles.css`                                | Styles. La palette de l'édition 02 est dans le bloc `:root`, nulle part ailleurs                 |
-| `src/entry-server.tsx`, `scripts/prerender.mjs` | Pré-rendu : balises de référencement, données structurées, `sitemap.xml`, `robots.txt`           |
-| `api/lead.js`, `api/_lib/`                      | Fonction serveur du formulaire : e-mail à l'équipe et accusé de réception au client              |
-| `public/frames/`                                | Les 48 images de la porte qui s'ouvre au défilement                                              |
-| `public/video/`, `public/img/`                  | Films des services (MP4 + WebM), affiches, photos de la flotte, motif Arcades                    |
-| `src/brand/`                                    | Logos copiés depuis `../logos/svg/` (couleur pilotée par le CSS)                                 |
+| Chemin                                          | Rôle                                                                                                                                              |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/App.tsx`, `src/components/`                | La page : chargement, ouverture (porte cochère), maison, dix services en films, rituel, flotte, jeu de cartes, questions, demande en trois étapes |
+| `src/i18n-base.json`, `src/i18n.ts`             | Tous les textes, en français, anglais, espagnol et arabe                                                                                          |
+| `src/styles.css`                                | Styles. La palette de l'édition 02 est dans le bloc `:root`, nulle part ailleurs                                                                  |
+| `src/entry-server.tsx`, `scripts/prerender.mjs` | Pré-rendu : balises de référencement, données structurées, `sitemap.xml`, `robots.txt`                                                            |
+| `api/lead.js`, `api/_lib/`                      | Fonction serveur du formulaire : e-mail à l'équipe et accusé de réception au client                                                               |
+| `public/frames/`                                | Les 48 images de la porte qui s'ouvre au défilement                                                                                               |
+| `public/video/`, `public/img/`                  | Films des services en 1080p (MP4 + WebM), affiches, photos de la flotte, motif Arcades                                                            |
+| `public/cartes/`                                | Figures du jeu de cartes Amane, rendues depuis le générateur du jeu                                                                               |
+| `scripts/encoder-films.sh`                      | Ré-encode les originaux Higgsfield pour le web                                                                                                    |
+| `src/brand/`                                    | Logos copiés depuis `../logos/svg/` (couleur pilotée par le CSS)                                                                                  |
 
 ## Mise en ligne sur Vercel
 
@@ -42,11 +44,19 @@ Le formulaire répond « envoi impossible » tant que `BREVO_API_KEY`, `LEAD_TO_
 2. Brevo → **Clés SMTP et API** : créer une clé API et la coller dans `BREVO_API_KEY` sur Vercel. Ne jamais l'écrire dans le dépôt.
 3. `LEAD_TO_EMAIL` : l'adresse qui reçoit les demandes (plusieurs possibles, séparées par des virgules).
 
+## Les services
+
+La liste est dans `src/i18n.ts` (`SERVICES`) et, côté serveur, dans `api/_lib/lead-core.js` : les deux doivent rester identiques.
+
+Voitures d'exception · Chauffeur privé · Van VIP · Séjours clé en main · Immobilier · Tables & restaurants · Événements · Personal shopping · Séjour esthétique · Conciergerie sur demande.
+
+Les cabinets esthétiques partenaires ne sont cités que si `CABINETS` est renseigné dans `src/config.ts`.
+
 ## Ce que fait le formulaire
 
-- Le client donne un e-mail ou un téléphone, un service, une date, un message.
+- Trois étapes : l'occasion (service, message), le moment (date, passagers), le contact (nom, e-mail ou téléphone).
 - L'équipe reçoit la demande par e-mail ; « Répondre » écrit directement au client.
-- Si le client a donné un e-mail, il reçoit un accusé de réception dans sa langue.
+- Si le client a donné un e-mail, il reçoit un accusé de réception dans sa langue. L'accusé ne reprend aucun texte libre : seulement le service, la date et le nombre de passagers.
 - Protections : champ piège pour les robots, même origine seulement, 5 envois par heure et par adresse IP.
 
 ## Référencement

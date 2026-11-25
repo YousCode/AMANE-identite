@@ -77,6 +77,9 @@ export function useScrollFrame(fn: FrameFn) {
   }, []);
 }
 
+/** Défilement doux (Lenis), partagé pour pouvoir le suspendre quand le menu couvre la page. */
+export const smooth: { lenis: { stop(): void; start(): void; destroy(): void } | null } = { lenis: null };
+
 export const reducedMotion = () =>
   typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 export const finePointer = () =>

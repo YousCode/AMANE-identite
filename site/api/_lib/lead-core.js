@@ -5,7 +5,7 @@
 // processLead(...) renvoie { status, json } (et parfois { headers }) ; le handler
 // api/lead.js se contente de transmettre.
 
-import { ackEmail, teamEmail, uneLigne, couper, LANGUES } from './emails.js';
+import { ackEmail, teamEmail, uneLigne, couper, idService, dateIso, passagersValides, LANGUES } from './emails.js';
 
 export const BREVO_URL = 'https://api.brevo.com/v3/smtp/email';
 export const DELAI_BREVO_MS = 8000;
@@ -14,9 +14,6 @@ export const TAILLES = {
   nom: 120,
   email: 200,
   tel: 40,
-  service: 80,
-  date: 40,
-  passagers: 8,
   message: 4000,
 };
 
@@ -106,15 +103,19 @@ export function telValide(tel) {
   return (String(tel).match(/\p{Nd}/gu) || []).length >= 8;
 }
 
-/** Ramène le corps reçu aux champs connus, nettoyés et bornés. */
+/**
+ * Ramène le corps reçu aux champs connus, nettoyés et bornés.
+ * service, date et passagers ne sont pas du texte libre : identifiant d'une
+ * liste fermée, date AAAA-MM-JJ réelle, « 1 » à « 7 » ou « 8+ ».
+ */
 export function nettoyerDemande(donnees = {}) {
   return {
     nom: uneLigne(donnees.nom, TAILLES.nom),
     email: uneLigne(donnees.email, TAILLES.email),
     tel: uneLigne(donnees.tel, TAILLES.tel),
-    service: uneLigne(donnees.service, TAILLES.service),
-    date: uneLigne(donnees.date, TAILLES.date),
-    passagers: uneLigne(donnees.passagers, TAILLES.passagers),
+    service: idService(donnees.service),
+    date: dateIso(donnees.date),
+    passagers: passagersValides(donnees.passagers),
     langue: langueValide(donnees.langue),
     message: texteLibre(donnees.message, TAILLES.message),
   };
@@ -272,8 +273,14 @@ export async function processLead({
   const donnees = lireDonnees(body);
   if (!donnees) return rep(400, { error: 'corps_invalide' });
 
-  // 3. Piège à robots : on répond comme si tout allait bien, sans rien envoyer.
-  if (potDeMielRempli(donnees.website)) return rep(200, { ok: true });
+  // 3. Piège à robots : champ caché « a_laisser_vide », qu'un humain ne voit pas.
+  // S'il est rempli, on répond comme si tout allait bien, sans rien envoyer.
+  // (L'ancien nom « website » a été abandonné : un remplissage automatique du
+  // navigateur pouvait le renseigner chez un vrai client.)
+  if (potDeMielRempli(donnees.a_laisser_vide)) {
+    console.warn('[lead] pot de miel');
+    return rep(200, { ok: true });
+  }
 
   // 4. Validation
   const lead = nettoyerDemande(donnees);
@@ -326,6 +333,8 @@ export async function processLead({
   // 8. Accusé de réception (seulement si le client a laissé un e-mail)
   if (!lead.email) return rep(200, { ok: true, ack: false });
 
+  // Ni texte libre dans le contenu (voir ackEmail), ni nom affiché dans le
+  // destinataire : rien de saisi librement ne part vers l'adresse du client.
   const accuse = ackEmail(lead);
   const ack = await envoyerBrevo({
     cleApi,
@@ -333,7 +342,7 @@ export async function processLead({
     etiquette: 'accusé',
     message: {
       sender,
-      to: [lead.nom ? { email: lead.email, name: lead.nom } : { email: lead.email }],
+      to: [{ email: lead.email }],
       subject: accuse.subject,
       htmlContent: accuse.html,
       textContent: accuse.text,

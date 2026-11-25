@@ -8,10 +8,14 @@
     <script>
       (function (h) {
         h.classList.add('js');
-        // Si le script principal n'est pas arrivé au bout de 7 s, la page s'affiche sans animation.
+        // Déjà venu dans cette session : pas de rideau de chargement.
+        try {
+          if (sessionStorage.getItem('amane-vu')) h.classList.add('pret', 'deja');
+        } catch (e) {}
+        // Si le script principal n'a pas démarré au bout de 4 s, la page s'affiche sans animation.
         setTimeout(function () {
-          if (!h.classList.contains('pret')) h.classList.remove('js');
-        }, 7000);
+          if (!h.classList.contains('charge')) h.classList.remove('js');
+        }, 4000);
       })(document.documentElement);
     </script>
     <!--head-->

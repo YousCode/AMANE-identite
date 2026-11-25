@@ -22,12 +22,29 @@ const SANS = 'Helvetica, Arial, sans-serif';
 
 export const LANGUES = ['fr', 'en', 'es', 'ar'];
 
-// Longueur maximale du message repris dans l'accusé. L'accusé part vers une
-// adresse saisie par un inconnu : on évite d'en faire un relais de texte libre.
-const MAX_MESSAGE_ACCUSE = 1000;
+// Identifiants de service envoyés par le formulaire. Liste fermée : toute autre
+// valeur est ramenée à « autre ».
+export const SERVICES = [
+  'voitures',
+  'chauffeur',
+  'van',
+  'sejours',
+  'immobilier',
+  'tables',
+  'evenements',
+  'shopping',
+  'esthetique',
+  'conciergerie',
+  'autre',
+];
+
+// Régions utilisées pour écrire la date dans la langue du client. En arabe :
+// calendrier grégorien et chiffres latins, quelle que soit la région.
+const LOCALES = { fr: 'fr-FR', en: 'en-GB', es: 'es-ES', ar: 'ar-u-ca-gregory-nu-latn' };
 
 // ---------------------------------------------------------------------------
 // Textes de l'accusé de réception. « Amane » n'est jamais traduit.
+// Les libellés français des services servent aussi à l'e-mail de l'équipe.
 // ---------------------------------------------------------------------------
 const TEXTES = {
   fr: {
@@ -37,13 +54,19 @@ const TEXTES = {
     recu: 'Nous avons bien reçu votre demande.',
     delai: 'Votre interlocuteur vous répond sous vingt-quatre heures, souvent dans l’heure.',
     recap: 'Votre demande',
-    champs: {
-      nom: 'Nom',
-      service: 'Service',
-      date: 'Date',
-      passagers: 'Passagers',
-      tel: 'Téléphone',
-      message: 'Message',
+    champs: { service: 'Service', date: 'Date', passagers: 'Passagers' },
+    services: {
+      voitures: "Voitures d'exception",
+      chauffeur: 'Chauffeur privé',
+      van: 'Van VIP',
+      sejours: 'Séjours clé en main',
+      immobilier: 'Immobilier',
+      tables: 'Tables & restaurants',
+      evenements: 'Événements',
+      shopping: 'Personal shopping',
+      esthetique: 'Séjour esthétique',
+      conciergerie: 'Conciergerie sur demande',
+      autre: 'Autre demande',
     },
     deuxPoints: ' : ',
     signature: 'Amane — Conciergerie privée · Paris',
@@ -56,13 +79,19 @@ const TEXTES = {
     recu: 'We have received your request.',
     delai: 'Your personal contact will reply within twenty-four hours, often within the hour.',
     recap: 'Your request',
-    champs: {
-      nom: 'Name',
-      service: 'Service',
-      date: 'Date',
-      passagers: 'Passengers',
-      tel: 'Telephone',
-      message: 'Message',
+    champs: { service: 'Service', date: 'Date', passagers: 'Passengers' },
+    services: {
+      voitures: 'Exceptional cars',
+      chauffeur: 'Private chauffeur',
+      van: 'VIP van',
+      sejours: 'Turnkey stays',
+      immobilier: 'Real estate',
+      tables: 'Tables & restaurants',
+      evenements: 'Events',
+      shopping: 'Personal shopping',
+      esthetique: 'Aesthetic stay',
+      conciergerie: 'Concierge on request',
+      autre: 'Other request',
     },
     deuxPoints: ': ',
     signature: 'Amane — Private concierge · Paris',
@@ -75,13 +104,19 @@ const TEXTES = {
     recu: 'Hemos recibido su solicitud.',
     delai: 'Su interlocutor le responderá en un plazo de veinticuatro horas, a menudo en menos de una hora.',
     recap: 'Su solicitud',
-    champs: {
-      nom: 'Nombre',
-      service: 'Servicio',
-      date: 'Fecha',
-      passagers: 'Pasajeros',
-      tel: 'Teléfono',
-      message: 'Mensaje',
+    champs: { service: 'Servicio', date: 'Fecha', passagers: 'Pasajeros' },
+    services: {
+      voitures: 'Coches excepcionales',
+      chauffeur: 'Chófer privado',
+      van: 'Van VIP',
+      sejours: 'Estancias llave en mano',
+      immobilier: 'Inmobiliaria',
+      tables: 'Mesas y restaurantes',
+      evenements: 'Eventos',
+      shopping: 'Personal shopping',
+      esthetique: 'Estancia estética',
+      conciergerie: 'Concierge a demanda',
+      autre: 'Otra solicitud',
     },
     deuxPoints: ': ',
     signature: 'Amane — Conserjería privada · París',
@@ -94,13 +129,19 @@ const TEXTES = {
     recu: 'لقد تلقّينا طلبكم.',
     delai: 'سيردّ عليكم مستشاركم الخاص خلال أربع وعشرين ساعة، وغالبًا خلال ساعة واحدة.',
     recap: 'طلبكم',
-    champs: {
-      nom: 'الاسم',
-      service: 'الخدمة',
-      date: 'التاريخ',
-      passagers: 'عدد الركاب',
-      tel: 'الهاتف',
-      message: 'الرسالة',
+    champs: { service: 'الخدمة', date: 'التاريخ', passagers: 'عدد الركاب' },
+    services: {
+      voitures: 'سيارات استثنائية',
+      chauffeur: 'سائق خاص',
+      van: 'فان VIP',
+      sejours: 'إقامات متكاملة',
+      immobilier: 'العقارات',
+      tables: 'المطاعم والحجوزات',
+      evenements: 'الفعاليات',
+      shopping: 'التسوّق الشخصي',
+      esthetique: 'إقامة تجميلية',
+      conciergerie: 'كونسيرج عند الطلب',
+      autre: 'طلب آخر',
     },
     deuxPoints: ': ',
     signature: 'Amane — كونسيرج خاص · باريس',
@@ -145,6 +186,47 @@ export function uneLigne(valeur, max = 200) {
   return couper(propre, max).trim();
 }
 
+/** Identifiant de service de la liste fermée ; tout le reste (ou vide) devient « autre ». */
+export function idService(valeur) {
+  const id = uneLigne(valeur, 40).toLowerCase();
+  return SERVICES.includes(id) ? id : 'autre';
+}
+
+function jourUtc(annee, mois, jour) {
+  const d = new Date(0);
+  d.setUTCFullYear(annee, mois - 1, jour);
+  return d;
+}
+
+/** Date au format AAAA-MM-JJ, et qui existe au calendrier ; sinon chaîne vide. */
+export function dateIso(valeur) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(typeof valeur === 'string' ? valeur.trim() : '');
+  if (!m) return '';
+  const [annee, mois, jour] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  if (annee < 1) return '';
+  const d = jourUtc(annee, mois, jour);
+  const reelle = d.getUTCFullYear() === annee && d.getUTCMonth() === mois - 1 && d.getUTCDate() === jour;
+  return reelle ? m[0] : '';
+}
+
+/** Nombre de passagers : « 1 » à « 7 » ou « 8+ » ; sinon chaîne vide. */
+export function passagersValides(valeur) {
+  const v = uneLigne(valeur, 8);
+  return /^(?:[1-7]|8\+)$/.test(v) ? v : '';
+}
+
+/** Écrit une date AAAA-MM-JJ déjà validée dans la langue voulue (« 12 décembre 2026 »). */
+function formaterDate(iso, langue) {
+  const [annee, mois, jour] = iso.split('-').map(Number);
+  try {
+    return new Intl.DateTimeFormat(LOCALES[langue], { timeZone: 'UTC', dateStyle: 'long' }).format(
+      jourUtc(annee, mois, jour),
+    );
+  } catch {
+    return iso;
+  }
+}
+
 function langueDe(lead) {
   const l = String(lead?.langue ?? '').toLowerCase();
   return LANGUES.includes(l) ? l : 'fr';
@@ -168,7 +250,6 @@ const STYLE_LIEN = `color:${C.bordeaux};text-decoration:underline;`;
 function valeurHtml({ value, kind }) {
   const v = echapper(value);
   if (kind === 'multi') return `<span dir="auto">${v.replace(/\n/g, '<br>')}</span>`;
-  if (kind === 'ltr') return `<span dir="ltr" style="unicode-bidi:embed;">${v}</span>`;
   if (kind === 'email') {
     return `<a href="${echapper(lienMailto(value))}" style="${STYLE_LIEN}">${v}</a>`;
   }
@@ -267,19 +348,20 @@ function recapTexte(rangees, deuxPoints) {
 // ---------------------------------------------------------------------------
 
 export function teamEmail(lead = {}) {
-  const service = uneLigne(lead.service, 80) || 'Service non précisé';
+  const service = TEXTES.fr.services[idService(lead.service)];
   const nom = uneLigne(lead.nom, 120) || 'Nom non précisé';
   const subject = uneLigne(`Nouvelle demande — ${service} — ${nom}`, 240);
   const langue = langueDe(lead);
+  const date = dateIso(lead.date);
   const vide = '—';
 
   const rangees = [
     { label: 'Nom', value: lead.nom || vide },
     lead.email ? { label: 'E-mail', value: lead.email, kind: 'email' } : { label: 'E-mail', value: vide },
     lead.tel ? { label: 'Téléphone', value: lead.tel, kind: 'tel' } : { label: 'Téléphone', value: vide },
-    { label: 'Service', value: lead.service || vide },
-    { label: 'Date', value: lead.date || vide },
-    { label: 'Passagers', value: lead.passagers || vide },
+    { label: 'Service', value: service },
+    { label: 'Date', value: date ? formaterDate(date, 'fr') : vide },
+    { label: 'Passagers', value: passagersValides(lead.passagers) || vide },
     { label: 'Langue', value: NOMS_LANGUES[langue] },
     { label: 'Message', value: lead.message || vide, kind: 'multi' },
   ];
@@ -291,7 +373,7 @@ export function teamEmail(lead = {}) {
 
   const contenu = [
     `<h1 style="margin:0 0 6px 0;font-family:${SERIF};font-size:24px;line-height:32px;font-weight:normal;color:${C.bordeaux};">Nouvelle demande</h1>`,
-    paragraphe(`<span dir="auto">${echapper(service)}</span> — <span dir="auto">${echapper(nom)}</span>`, {
+    paragraphe(`${echapper(service)} — <span dir="auto">${echapper(nom)}</span>`, {
       marge: '0 0 24px 0',
     }),
     tableauRecap(rangees, 'ltr'),
@@ -326,20 +408,22 @@ export function teamEmail(lead = {}) {
 // Accusé de réception au client
 // ---------------------------------------------------------------------------
 
+// L'accusé part vers une adresse saisie par un inconnu, qui n'est pas forcément
+// la sienne. Il ne reprend donc AUCUN texte libre de la demande (ni nom, ni
+// message, ni téléphone) : seulement des valeurs choisies dans des listes fermées
+// — le libellé du service, la date, le nombre de passagers. Ainsi, personne ne
+// peut se servir du formulaire pour faire envoyer son propre texte à un tiers
+// sous l'en-tête Amane. Ne rien ajouter ici qui vienne tel quel du formulaire.
 export function ackEmail(lead = {}) {
   const langue = langueDe(lead);
   const t = TEXTES[langue];
-
-  let message = lead.message || '';
-  if (message.length > MAX_MESSAGE_ACCUSE) message = couper(message, MAX_MESSAGE_ACCUSE).trimEnd() + '…';
+  const date = dateIso(lead.date);
+  const passagers = passagersValides(lead.passagers);
 
   const rangees = [
-    lead.nom && { label: t.champs.nom, value: lead.nom },
-    lead.service && { label: t.champs.service, value: lead.service },
-    lead.date && { label: t.champs.date, value: lead.date },
-    lead.passagers && { label: t.champs.passagers, value: lead.passagers },
-    lead.tel && { label: t.champs.tel, value: lead.tel, kind: 'ltr' },
-    message && { label: t.champs.message, value: message, kind: 'multi' },
+    { label: t.champs.service, value: t.services[idService(lead.service)] },
+    date && { label: t.champs.date, value: formaterDate(date, langue) },
+    passagers && { label: t.champs.passagers, value: passagers },
   ].filter(Boolean);
 
   const blocs = [
@@ -347,7 +431,7 @@ export function ackEmail(lead = {}) {
     paragraphe(echapper(t.recu), { marge: '0 0 12px 0', serif: true, taille: 22, hauteur: 30, couleur: C.bordeaux }),
     paragraphe(echapper(t.delai), { marge: '0' }),
   ];
-  if (rangees.length) blocs.push(titreSection(t.recap, t.dir), tableauRecap(rangees, t.dir));
+  blocs.push(titreSection(t.recap, t.dir), tableauRecap(rangees, t.dir));
 
   const html = gabarit({
     lang: langue,
@@ -359,7 +443,7 @@ export function ackEmail(lead = {}) {
   });
 
   const lignes = ['AMANE', '', t.salut, '', `${t.recu} ${t.delai}`];
-  if (rangees.length) lignes.push('', t.recap, '—', recapTexte(rangees, t.deuxPoints));
+  lignes.push('', t.recap, '—', recapTexte(rangees, t.deuxPoints));
   lignes.push('', t.signature, '', t.note);
 
   return { subject: t.sujet, html, text: lignes.join('\n') };

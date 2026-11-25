@@ -1,27 +1,46 @@
-import { FLEET, ROMAN, SERVICES, type Dict } from '../i18n';
-import { Logotype } from '../brand';
-import { Title } from '../ui';
+import { useState, type CSSProperties } from 'react';
+import { CARDS, FLEET, SERVICES, numerals, type Dict, type Lang } from '../i18n';
+import { Logotype, Sceau } from '../brand';
 import { asset } from '../config';
+import { Title } from '../ui';
 import { Loop } from './Loop';
 
-const AR_NUM = ['١', '٢', '٣', '٤', '٥', '٦'];
+type Props = { d: Dict; lang: Lang };
 
-export function Maison({ d, rtl }: { d: Dict; rtl: boolean }) {
+/** Deuxième écran : qui est Amane. Le film des arcades de Rivoli tient dans l'arche du logo, scellé par le cachet. */
+export function Maison({ d, lang }: Props) {
+  const num = numerals(lang);
   const promises: [string, string][] = [
     [d.p1t, d.p1],
     [d.p2t, d.p2],
     [d.p3t, d.p3],
   ];
   return (
-    <section className="sec center" id="maison" data-tone="page" aria-labelledby="mt">
+    <section className="sec maison" id="maison" data-tone="page" aria-labelledby="mt">
       <div className="wrap">
-        <p className="k eb rv">{d.mk}</p>
-        <Title id="mt" html={d.mt} />
-        <p className="lead rv">{d.mp}</p>
+        <div className="maison__haut">
+          <div>
+            <p className="k eb rv">{d.mk}</p>
+            <Title id="mt" html={d.mt} />
+            <p className="lead rv">{d.mp}</p>
+            <a className="link rv" href="#services">
+              {d.cta2}
+            </a>
+          </div>
+          <figure className="maison__vue rv">
+            <div className="maison__cadre">
+              <div className="arche">
+                <Loop name="rivoli" />
+              </div>
+              <Sceau className="maison__sceau" />
+            </div>
+            <figcaption>{d.bp}</figcaption>
+          </figure>
+        </div>
         <div className="promises">
           {promises.map(([t, p], i) => (
             <div className="rv" key={i}>
-              <b aria-hidden="true">{(rtl ? AR_NUM : ROMAN)[i]}</b>
+              <b aria-hidden="true">{num[i]}</b>
               <strong>{t}</strong>
               <span>{p}</span>
             </div>
@@ -32,8 +51,9 @@ export function Maison({ d, rtl }: { d: Dict; rtl: boolean }) {
   );
 }
 
-/** Les six services d'un coup d'œil ; chaque ligne mène à son film. */
-export function ServicesIndex({ d, rtl }: { d: Dict; rtl: boolean }) {
+/** Tous les services d'un coup d'œil ; chaque ligne mène à son film. */
+export function ServicesIndex({ d, lang }: Props) {
+  const num = numerals(lang);
   return (
     <section className="sec tight" id="services" data-tone="page" aria-labelledby="st">
       <div className="wrap">
@@ -46,7 +66,7 @@ export function ServicesIndex({ d, rtl }: { d: Dict; rtl: boolean }) {
           {SERVICES.map((s, i) => (
             <li className="rv" key={s.id}>
               <a href={`#${s.id}`}>
-                <b aria-hidden="true">{(rtl ? AR_NUM : ROMAN)[i]}</b>
+                <b aria-hidden="true">{num[i]}</b>
                 <strong>{d[s.key][0]}</strong>
                 <span>{d[s.key][2]}</span>
               </a>
@@ -58,17 +78,7 @@ export function ServicesIndex({ d, rtl }: { d: Dict; rtl: boolean }) {
   );
 }
 
-export function Film({
-  id,
-  name,
-  portrait,
-  kicker,
-  title,
-  line,
-  cta,
-  onAsk,
-  index,
-}: {
+type FilmProps = {
   id: string;
   name: string;
   portrait?: string;
@@ -77,9 +87,14 @@ export function Film({
   line: string;
   cta: string;
   onAsk?: () => void;
-  /** Rang du service et total, affichés en chiffres romains (« II — VI »). */
-  index?: [number, number];
-}) {
+  /** Rang du service et total, déjà écrits dans la numérotation de la langue (« II », « VI »). */
+  rank?: [string, string];
+  /** Mention sous le texte (liste des cabinets partenaires). */
+  note?: string;
+};
+
+/** Film plein cadre. Le logotype reste dans l'angle de chaque film, quel que soit le recadrage. */
+export function Film({ id, name, portrait, kicker, title, line, cta, onAsk, rank, note }: FilmProps) {
   return (
     <section className="film" id={id} data-tone="dark" aria-labelledby={`${id}-t`}>
       <Loop name={name} portrait={portrait} />
@@ -87,20 +102,25 @@ export function Film({
         <p className="k rv">{kicker}</p>
         <Title id={`${id}-t`} html={title} />
         <p className="ln rv">{line}</p>
+        {note && <p className="note rv">{note}</p>}
         <a className="link rv" href="#demande" onClick={onAsk}>
           {cta}
         </a>
       </div>
-      {index && (
-        <p className="rang" aria-hidden="true">
-          {ROMAN[index[0]]} <i /> {ROMAN[index[1] - 1]}
-        </p>
-      )}
+      <div className="coin" aria-hidden="true">
+        {rank && (
+          <p className="rang" dir="ltr">
+            {rank[0]} <i /> {rank[1]}
+          </p>
+        )}
+        <Logotype className="griffe" decorative />
+      </div>
     </section>
   );
 }
 
-export function Rituel({ d }: { d: Dict }) {
+export function Rituel({ d, lang }: Props) {
+  const num = numerals(lang);
   return (
     <section className="rituel" id="rituel" data-tone="bx" aria-labelledby="rt">
       <div className="wrap two">
@@ -110,7 +130,7 @@ export function Rituel({ d }: { d: Dict }) {
           <ol className="steps">
             {d.steps.map(([t, p], i) => (
               <li className="step rv" key={i}>
-                <b aria-hidden="true">0{i + 1}</b>
+                <b aria-hidden="true">{num[i]}</b>
                 <div>
                   <strong>{t}</strong>
                   <small>{p}</small>
@@ -157,6 +177,59 @@ export function Flotte({ d }: { d: Dict }) {
               </figcaption>
             </figure>
           ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * Le jeu de cartes de la maison. À l'arrivée dans l'écran, les cartes sortent du paquet face cachée,
+ * s'ouvrent en éventail puis se retournent une à une. Au survol une carte se lève ; un clic la retourne.
+ */
+export function Jeu({ d }: { d: Dict }) {
+  const [shown, setShown] = useState(0);
+  const [flipped, setFlipped] = useState<number[]>([]);
+  const toggle = (i: number) => setFlipped((f) => (f.includes(i) ? f.filter((x) => x !== i) : [...f, i]));
+  return (
+    <section className="jeu" id="jeu" data-tone="bx" aria-labelledby="jt">
+      <div className="wrap two">
+        <div>
+          <p className="k eb rv">{d.jk}</p>
+          <Title id="jt" html={d.jt} />
+          <p className="lead rv">{d.jp}</p>
+        </div>
+        <div className="jeu__table">
+          <ul className="eventail rv" style={{ '--n': CARDS.length } as CSSProperties}>
+            {CARDS.map((c, i) => (
+              <li key={c.name} style={{ '--k': i } as CSSProperties}>
+                <button
+                  type="button"
+                  className={flipped.includes(i) ? 'dos' : undefined}
+                  aria-label={`${c.name} — ${d.jRoles[i]}`}
+                  aria-pressed={flipped.includes(i)}
+                  onClick={() => toggle(i)}
+                  onMouseEnter={() => setShown(i)}
+                  onFocus={() => setShown(i)}
+                >
+                  <img src={asset(c.img)} alt="" width={720} height={1008} loading="lazy" decoding="async" />
+                  <img
+                    className="verso"
+                    src={asset('cartes/dos.webp')}
+                    alt=""
+                    width={720}
+                    height={1008}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </button>
+              </li>
+            ))}
+          </ul>
+          <p className="jeu__nom rv" aria-live="polite">
+            <b lang="fr">{CARDS[shown].name}</b>
+            <span>{d.jRoles[shown]}</span>
+          </p>
         </div>
       </div>
     </section>
