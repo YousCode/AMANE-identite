@@ -441,19 +441,20 @@ export const SLOGAN = ['Arrive as a <em>Guest.</em>', 'Leave with a <em>Story.</
 
 /**
  * Tout ce que fait Amane. `id` sert d'ancre et d'identifiant envoyé au serveur (la même liste est tenue
- * dans api/_lib/lead-core.js) ; `film` et `portrait` nomment les fichiers de public/video.
+ * dans api/_lib/lead-core.js) ; `film` et `portrait` nomment les fichiers de public/video ;
+ * `flip` place le texte du côté opposé au sujet de l'image.
  */
 export const SERVICES = [
-  { key: 's3', id: 'van', film: 'van', portrait: 'm-van' },
-  { key: 's1', id: 'voitures', film: 'jour-montaigne', portrait: '' },
-  { key: 's2', id: 'chauffeur', film: 'volant', portrait: 'm-chauffeur' },
-  { key: 's5', id: 'sejours', film: 'salon', portrait: '' },
-  { key: 's7', id: 'immobilier', film: 'appartement', portrait: 'm-appartement' },
-  { key: 's8', id: 'tables', film: 'table', portrait: 'm-table' },
-  { key: 's9', id: 'evenements', film: 'reception', portrait: '' },
-  { key: 's4', id: 'shopping', film: 'shopping', portrait: '' },
-  { key: 's10', id: 'esthetique', film: 'clinique', portrait: 'm-clinique' },
-  { key: 's6', id: 'conciergerie', film: 'cour', portrait: '' },
+  { key: 's3', id: 'van', film: 'van', portrait: 'm-van', flip: false },
+  { key: 's1', id: 'voitures', film: 'jour-montaigne', portrait: '', flip: true },
+  { key: 's2', id: 'chauffeur', film: 'volant', portrait: 'm-chauffeur', flip: false },
+  { key: 's5', id: 'sejours', film: 'salon', portrait: '', flip: true },
+  { key: 's7', id: 'immobilier', film: 'appartement', portrait: 'm-appartement', flip: false },
+  { key: 's8', id: 'tables', film: 'table', portrait: 'm-table', flip: true },
+  { key: 's9', id: 'evenements', film: 'reception', portrait: '', flip: false },
+  { key: 's4', id: 'shopping', film: 'shopping', portrait: '', flip: false },
+  { key: 's10', id: 'esthetique', film: 'clinique', portrait: 'm-clinique', flip: true },
+  { key: 's6', id: 'conciergerie', film: 'cour', portrait: '', flip: false },
 ] as const;
 
 export type ServiceId = (typeof SERVICES)[number]['id'];

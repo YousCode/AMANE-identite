@@ -77,7 +77,7 @@ export function App({ lang }: { lang: Lang }) {
                   cta={d.ask}
                   onAsk={() => setService(i)}
                   rank={num[ci]}
-                  flip={i % 2 === 1}
+                  flip={s.flip}
                   note={s.id === 'esthetique' ? cabinets : undefined}
                 />
               );

@@ -2308,3 +2308,15 @@ html[dir='rtl'] .nav::after {
     transform: none;
   }
 }
+
+/* Dans l'arche du rituel, le cadrage suit la clé et son étiquette de cuir */
+.rituel .arche video {
+  object-position: 70% 50%;
+}
+
+/* Sur écran étroit, le film du shopping est recadré sur les sacs, à droite de l'image */
+@media (max-width: 760px) {
+  #shopping video {
+    object-position: 80% 50%;
+  }
+}
