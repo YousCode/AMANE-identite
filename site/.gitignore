@@ -5,3 +5,6 @@ dist-ssr/
 .env.local
 .vercel/
 dist-apercu/
+dist-ovh/
+amane-config.php
+amane-data/

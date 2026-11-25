@@ -1,0 +1,68 @@
+# Amane — configuration Apache de l'hébergement OVH (dossier www/).
+# Ce fichier est copié à la racine du site par `npm run ovh`.
+
+Options -Indexes
+DirectoryIndex index.html
+AddDefaultCharset utf-8
+ErrorDocument 404 /index.html
+
+# Types de fichiers que certains serveurs ne connaissent pas encore
+AddType video/webm .webm
+AddType video/mp4 .mp4
+AddType image/webp .webp
+AddType image/svg+xml .svg
+AddType font/woff2 .woff2
+AddType application/xml .xml
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # 1. Une seule adresse : www.amane.paris renvoie, en un seul saut, vers https://amane.paris.
+  RewriteCond %{HTTP_HOST} ^www\.amane\.paris$ [NC]
+  RewriteRule ^(.*)$ https://amane.paris/$1 [R=301,L]
+
+  # 2. Toujours en HTTPS. OVH déchiffre en amont : on se fie au port, comme le recommande OVH,
+  #    et à la variable HTTPS quand elle est présente, pour ne jamais boucler.
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{SERVER_PORT} ^80$
+  RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+
+  # Langues sans barre finale : directement vers la bonne adresse.
+  RewriteRule ^(en|es|ar)$ https://%{HTTP_HOST}/$1/ [R=301,L]
+
+  # 3. Fichiers cachés (.htaccess, .git…) : jamais servis.
+  RewriteRule (^|/)\.(?!well-known/) - [F]
+
+  # 4. Le formulaire du site appelle /api/lead : c'est le script PHP qui répond.
+  RewriteRule ^api/lead/?$ api/lead.php [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+
+  # Pages : toujours revalidées, pour qu'une mise à jour soit visible tout de suite.
+  <FilesMatch "\.(html|xml|txt)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+
+  # Scripts, styles et polices : leur nom change à chaque version, on les garde un an.
+  <If "%{REQUEST_URI} =~ m#^/assets/#">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </If>
+
+  # Films, images, porte, cartes : un jour, puis revalidation.
+  <If "%{REQUEST_URI} =~ m#^/(video|img|frames|cartes)/#">
+    Header set Cache-Control "public, max-age=86400, stale-while-revalidate=604800"
+  </If>
+
+  # À activer seulement une fois le HTTPS vérifié sur amane.paris et www.amane.paris :
+  # Header always set Strict-Transport-Security "max-age=31536000"
+</IfModule>
+
+# Compression des fichiers texte
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/plain text/xml application/xml application/javascript text/javascript application/json image/svg+xml
+</IfModule>

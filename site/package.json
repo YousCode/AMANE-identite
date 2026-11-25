@@ -10,10 +10,11 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build && vite build --ssr src/entry-server.tsx --outDir dist-ssr && node scripts/prerender.mjs",
+    "ovh": "npm run build && node scripts/ovh.mjs",
     "preview": "vite preview --port 4173 --strictPort",
     "apercu": "APERCU=1 vite build --base ./ --outDir dist-apercu && node scripts/apercu.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "node --test tests/api/*.test.js",
+    "test": "node --test tests/api/*.test.js && php tests/php/lead_test.php",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
