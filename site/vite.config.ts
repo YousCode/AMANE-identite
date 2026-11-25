@@ -22,5 +22,10 @@ function devApi(): Plugin {
 
 export default defineConfig({
   plugins: [react(), devApi()],
-  build: { assetsInlineLimit: 0, cssMinify: true },
+  build: {
+    assetsInlineLimit: 0,
+    cssMinify: true,
+    // Aperçu autonome : un seul fichier de script, intégré ensuite dans la page.
+    rollupOptions: process.env.APERCU ? { output: { inlineDynamicImports: true } } : undefined,
+  },
 });

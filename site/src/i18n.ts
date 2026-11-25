@@ -132,10 +132,10 @@ export const SERVICES = [
 ] as const;
 
 export const FLEET = [
-  { key: 'c1', img: '/img/fleet-m5.jpg' },
-  { key: 'c2', img: '/img/fleet-g63.jpg' },
-  { key: 'c3', img: '/img/fleet-f296.jpg' },
-  { key: 'c4', img: '/img/fleet-classev.jpg' },
+  { key: 'c1', img: 'img/fleet-m5.jpg' },
+  { key: 'c2', img: 'img/fleet-g63.jpg' },
+  { key: 'c3', img: 'img/fleet-f296.jpg' },
+  { key: 'c4', img: 'img/fleet-classev.jpg' },
 ] as const;
 
 export const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI'];

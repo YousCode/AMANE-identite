@@ -1,22 +1,39 @@
 import { StrictMode } from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';
 import { App } from './App';
-import { LANG_META, langFromPath } from './i18n';
+import { APERCU } from './config';
+import { LANGS, LANG_META, langFromPath, type Lang } from './i18n';
 import './styles.css';
 
-const lang = langFromPath(location.pathname);
-const root = document.getElementById('root')!;
-const app = (
+const el = document.getElementById('root')!;
+const app = (lang: Lang) => (
   <StrictMode>
-    <App lang={lang} />
+    <App lang={lang} key={lang} />
   </StrictMode>
 );
-
-if (root.firstElementChild) {
-  hydrateRoot(root, app);
-} else {
-  // Développement : pas de pré-rendu, la langue vient de l'adresse.
+const setHtml = (lang: Lang) => {
   document.documentElement.lang = lang;
   document.documentElement.dir = LANG_META[lang].dir;
-  createRoot(root).render(app);
+};
+
+if (el.firstElementChild) {
+  hydrateRoot(el, app(langFromPath(location.pathname)));
+} else {
+  // Développement et aperçu autonome : pas de pré-rendu.
+  const first = APERCU ? 'fr' : langFromPath(location.pathname);
+  const root = createRoot(el);
+  setHtml(first);
+  root.render(app(first));
+  if (APERCU) {
+    // Dans l'aperçu il n'y a qu'une page : les liens de langue changent le texte sur place.
+    document.addEventListener('click', (e) => {
+      const a = (e.target as Element).closest<HTMLAnchorElement>('a[hreflang]');
+      const lang = a?.hreflang as Lang | undefined;
+      if (!a || !lang || !(LANGS as readonly string[]).includes(lang)) return;
+      e.preventDefault();
+      setHtml(lang);
+      root.render(app(lang));
+      scrollTo(0, 0);
+    });
+  }
 }

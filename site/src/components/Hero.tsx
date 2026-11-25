@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react';
 import type { Dict } from '../i18n';
 import { Title, reducedMotion, useScrollFrame } from '../ui';
+import { asset } from '../config';
 
 const FRAMES = 48;
-const frameUrl = (n: number) => `/frames/f_${String(n).padStart(3, '0')}.jpg`;
+const frameUrl = (n: number) => asset(`frames/f_${String(n).padStart(3, '0')}.jpg`);
 
 /**
  * Ouverture : la porte cochère s'ouvre au défilement (48 images dessinées sur une toile).

@@ -1,6 +1,7 @@
 import { FLEET, ROMAN, SERVICES, type Dict } from '../i18n';
 import { Logotype } from '../brand';
 import { Title } from '../ui';
+import { asset } from '../config';
 import { Loop } from './Loop';
 
 const AR_NUM = ['١', '٢', '٣', '٤', '٥', '٦'];
@@ -111,7 +112,7 @@ export function Flotte({ d }: { d: Dict }) {
           {FLEET.map((f) => (
             <figure className="rv" key={f.key}>
               <div className="ph">
-                <img src={f.img} alt={`${d[f.key][0]} — Amane, Paris`} loading="lazy" decoding="async" width={1100} height={1460} />
+                <img src={asset(f.img)} alt={`${d[f.key][0]} — Amane, Paris`} loading="lazy" decoding="async" width={1100} height={1460} />
               </div>
               <figcaption>
                 <b className="k">{d[f.key][0]}</b>
