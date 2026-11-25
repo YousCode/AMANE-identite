@@ -1,0 +1,64 @@
+# Met le site en ligne sur l'hébergement OVH à chaque modification du dossier site/ sur main.
+#
+# Réglages à faire une fois dans GitHub → Settings → Secrets and variables → Actions :
+#   Variables : OVH_FTP_SERVER  (ex. ftp.cluster0XX.hosting.ovh.net, dans l'espace client OVH → FTP-SSH)
+#               OVH_FTP_USER    (identifiant FTP principal)
+#               OVH_FTP_PROTOCOL (facultatif : ftps par défaut ; mettre ftp si OVH refuse ftps)
+#   Secret    : OVH_FTP_PASSWORD
+#   Facultatif : VITE_WHATSAPP_NUMBER, VITE_CONTACT_EMAIL (coordonnées affichées près du formulaire)
+# Tant que OVH_FTP_SERVER n'est pas renseignée, le déploiement est simplement ignoré.
+
+name: Déploiement OVH
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - ".github/workflows/deploy-ovh.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-ovh
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: ${{ vars.OVH_FTP_SERVER != '' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: Dépendances
+        run: npm ci --no-audit --no-fund
+
+      - name: Tests du formulaire (JavaScript et PHP)
+        run: npm test
+
+      - name: Construction du dossier www/
+        run: npm run ovh
+        env:
+          VITE_WHATSAPP_NUMBER: ${{ vars.VITE_WHATSAPP_NUMBER }}
+          VITE_CONTACT_EMAIL: ${{ vars.VITE_CONTACT_EMAIL }}
+
+      - name: Envoi sur OVH
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ vars.OVH_FTP_SERVER }}
+          username: ${{ vars.OVH_FTP_USER }}
+          password: ${{ secrets.OVH_FTP_PASSWORD }}
+          protocol: ${{ vars.OVH_FTP_PROTOCOL || 'ftps' }}
+          local-dir: site/dist-ovh/
+          server-dir: www/
