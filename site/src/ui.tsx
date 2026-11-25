@@ -4,16 +4,33 @@ import { createElement, useEffect, useRef, type CSSProperties, type ReactNode } 
  * Titre composé mot à mot : chaque mot monte à l'entrée dans l'écran.
  * Le texte vient du dictionnaire et peut contenir une emphase <em>…</em>.
  */
-export function Title({ as = 'h2', html, id, className = '' }: { as?: 'h1' | 'h2' | 'h3'; html: string; id?: string; className?: string }) {
+export function Title({
+  as = 'h2',
+  html,
+  id,
+  className = '',
+}: {
+  as?: 'h1' | 'h2' | 'h3';
+  html: string;
+  id?: string;
+  className?: string;
+}) {
   let i = 0;
   const words = (text: string, key: string): ReactNode[] =>
-    text.split(/(\s+)/).filter(Boolean).map((p, k) =>
-      /^\s+$/.test(p) ? ' ' : (
-        <span className="w" key={key + k}>
-          <span className="c" style={{ '--i': i++ } as CSSProperties}>{p}</span>
-        </span>
-      ),
-    );
+    text
+      .split(/([ \n\t]+)/)
+      .filter(Boolean)
+      .map((p, k) =>
+        /^[ \n\t]+$/.test(p) ? (
+          ' '
+        ) : (
+          <span className="w" key={key + k}>
+            <span className="c" style={{ '--i': i++ } as CSSProperties}>
+              {p}
+            </span>
+          </span>
+        ),
+      );
   const parts = html.split(/(<em>.*?<\/em>)/).filter(Boolean);
   return createElement(
     as,
@@ -60,5 +77,7 @@ export function useScrollFrame(fn: FrameFn) {
   }, []);
 }
 
-export const reducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-export const finePointer = () => typeof matchMedia === 'function' && matchMedia('(hover:hover) and (pointer:fine)').matches;
+export const reducedMotion = () =>
+  typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+export const finePointer = () =>
+  typeof matchMedia === 'function' && matchMedia('(hover:hover) and (pointer:fine)').matches;

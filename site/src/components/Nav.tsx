@@ -45,14 +45,28 @@ export function Nav({ d, lang, tone, fab }: { d: Dict; lang: Lang; tone: Tone; f
       <header className={`nav ${menu ? 'solid' : tone === 'page' ? 'solid' : tone === 'dark' ? 'ondark' : 'onbx'}`}>
         <div className="in">
           <div className="side">
-            <button className="menub" type="button" aria-expanded={menu} aria-controls="mmenu" onClick={() => setMenu(!menu)}>
+            <button
+              className="menub"
+              type="button"
+              aria-expanded={menu}
+              aria-controls="mmenu"
+              onClick={() => setMenu(!menu)}
+            >
               <i aria-hidden="true" />
               <span>{menu ? d.close : d.menu}</span>
             </button>
             <div className={`lang${langOpen ? ' open' : ''}`}>
-              <button type="button" aria-haspopup="true" aria-expanded={langOpen} aria-label={d.langLabel} onClick={() => setLangOpen(!langOpen)}>
+              <button
+                type="button"
+                aria-haspopup="true"
+                aria-expanded={langOpen}
+                aria-label={d.langLabel}
+                onClick={() => setLangOpen(!langOpen)}
+              >
                 <span>{LANG_META[lang].short}</span>
-                <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" aria-hidden="true"><path d="M1 1l4 4 4-4" /></svg>
+                <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" aria-hidden="true">
+                  <path d="M1 1l4 4 4-4" />
+                </svg>
               </button>
               <ul>
                 {LANGS.map((l) => (
@@ -70,7 +84,9 @@ export function Nav({ d, lang, tone, fab }: { d: Dict; lang: Lang; tone: Tone; f
             <MarkA />
           </a>
           <div className="side e">
-            <a className="link ask" href="#demande" onClick={() => setMenu(false)}>{d.cta}</a>
+            <a className="link ask" href="#demande" onClick={() => setMenu(false)}>
+              {d.cta}
+            </a>
           </div>
         </div>
       </header>
@@ -78,17 +94,27 @@ export function Nav({ d, lang, tone, fab }: { d: Dict; lang: Lang; tone: Tone; f
       <div className="mmenu" id="mmenu" data-lenis-prevent aria-hidden={!menu} inert={!menu}>
         <nav aria-label={d.menu}>
           {links.map(([href, label]) => (
-            <a key={href} href={href} onClick={() => setMenu(false)}>{label}</a>
+            <a key={href} href={href} onClick={() => setMenu(false)}>
+              {label}
+            </a>
           ))}
         </nav>
         <div className="ml">
           {LANGS.map((l) => (
-            <a key={l} href={LANG_META[l].path} hrefLang={l} lang={l} aria-current={l === lang ? 'true' : undefined}>{LANG_META[l].name}</a>
+            <a key={l} href={LANG_META[l].path} hrefLang={l} lang={l} aria-current={l === lang ? 'true' : undefined}>
+              {LANG_META[l].name}
+            </a>
           ))}
         </div>
       </div>
 
-      <a className={`btn fab${fab.on && !menu ? ' on' : ''}${fab.dark ? ' onbx' : ''}`} href="#demande" tabIndex={fab.on ? 0 : -1}>{d.cta}</a>
+      <a
+        className={`btn fab${fab.on && !menu ? ' on' : ''}${fab.dark ? ' onbx' : ''}`}
+        href="#demande"
+        tabIndex={fab.on ? 0 : -1}
+      >
+        {d.cta}
+      </a>
     </>
   );
 }

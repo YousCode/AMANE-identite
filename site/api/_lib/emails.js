@@ -256,7 +256,9 @@ function titreSection(texte, dir) {
 
 function recapTexte(rangees, deuxPoints) {
   return rangees
-    .map((r) => (r.kind === 'multi' ? `${r.label}${deuxPoints.trimEnd()}\n${r.value}` : `${r.label}${deuxPoints}${r.value}`))
+    .map((r) =>
+      r.kind === 'multi' ? `${r.label}${deuxPoints.trimEnd()}\n${r.value}` : `${r.label}${deuxPoints}${r.value}`,
+    )
     .join('\n');
 }
 
@@ -289,7 +291,9 @@ export function teamEmail(lead = {}) {
 
   const contenu = [
     `<h1 style="margin:0 0 6px 0;font-family:${SERIF};font-size:24px;line-height:32px;font-weight:normal;color:${C.bordeaux};">Nouvelle demande</h1>`,
-    paragraphe(`<span dir="auto">${echapper(service)}</span> — <span dir="auto">${echapper(nom)}</span>`, { marge: '0 0 24px 0' }),
+    paragraphe(`<span dir="auto">${echapper(service)}</span> — <span dir="auto">${echapper(nom)}</span>`, {
+      marge: '0 0 24px 0',
+    }),
     tableauRecap(rangees, 'ltr'),
     paragraphe(echapper(consigne), { marge: '20px 0 0 0', taille: 13, hauteur: 20 }),
   ].join('\n');

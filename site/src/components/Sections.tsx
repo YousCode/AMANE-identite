@@ -7,7 +7,11 @@ import { Loop } from './Loop';
 const AR_NUM = ['١', '٢', '٣', '٤', '٥', '٦'];
 
 export function Maison({ d, rtl }: { d: Dict; rtl: boolean }) {
-  const promises: [string, string][] = [[d.p1t, d.p1], [d.p2t, d.p2], [d.p3t, d.p3]];
+  const promises: [string, string][] = [
+    [d.p1t, d.p1],
+    [d.p2t, d.p2],
+    [d.p3t, d.p3],
+  ];
   return (
     <section className="sec center" id="maison" data-tone="page" aria-labelledby="mt">
       <div className="wrap">
@@ -54,8 +58,27 @@ export function ServicesIndex({ d, rtl }: { d: Dict; rtl: boolean }) {
   );
 }
 
-export function Film({ id, name, portrait, kicker, title, line, cta, onAsk }: {
-  id: string; name: string; portrait?: string; kicker: string; title: string; line: string; cta: string; onAsk?: () => void;
+export function Film({
+  id,
+  name,
+  portrait,
+  kicker,
+  title,
+  line,
+  cta,
+  onAsk,
+  index,
+}: {
+  id: string;
+  name: string;
+  portrait?: string;
+  kicker: string;
+  title: string;
+  line: string;
+  cta: string;
+  onAsk?: () => void;
+  /** Rang du service et total, affichés en chiffres romains (« II — VI »). */
+  index?: [number, number];
 }) {
   return (
     <section className="film" id={id} data-tone="dark" aria-labelledby={`${id}-t`}>
@@ -64,8 +87,15 @@ export function Film({ id, name, portrait, kicker, title, line, cta, onAsk }: {
         <p className="k rv">{kicker}</p>
         <Title id={`${id}-t`} html={title} />
         <p className="ln rv">{line}</p>
-        <a className="link rv" href="#demande" onClick={onAsk}>{cta}</a>
+        <a className="link rv" href="#demande" onClick={onAsk}>
+          {cta}
+        </a>
       </div>
+      {index && (
+        <p className="rang" aria-hidden="true">
+          {ROMAN[index[0]]} <i /> {ROMAN[index[1] - 1]}
+        </p>
+      )}
     </section>
   );
 }
@@ -112,7 +142,14 @@ export function Flotte({ d }: { d: Dict }) {
           {FLEET.map((f) => (
             <figure className="rv" key={f.key}>
               <div className="ph">
-                <img src={asset(f.img)} alt={`${d[f.key][0]} — Amane, Paris`} loading="lazy" decoding="async" width={1100} height={1460} />
+                <img
+                  src={asset(f.img)}
+                  alt={`${d[f.key][0]} — Amane, Paris`}
+                  loading="lazy"
+                  decoding="async"
+                  width={1100}
+                  height={1460}
+                />
               </div>
               <figcaption>
                 <b className="k">{d[f.key][0]}</b>
@@ -159,10 +196,18 @@ export function Footer({ d }: { d: Dict }) {
         <span>{d.fo2}</span>
       </div>
       <nav aria-label="Amane">
-        <a className="link" href="#services">{d.n1}</a>
-        <a className="link" href="#flotte">{d.n3}</a>
-        <a className="link" href="#questions">{d.n4}</a>
-        <a className="link" href="#demande">{d.cta}</a>
+        <a className="link" href="#services">
+          {d.n1}
+        </a>
+        <a className="link" href="#flotte">
+          {d.n3}
+        </a>
+        <a className="link" href="#questions">
+          {d.n4}
+        </a>
+        <a className="link" href="#demande">
+          {d.cta}
+        </a>
       </nav>
       <p className="cp">© 2026 Amane</p>
     </footer>

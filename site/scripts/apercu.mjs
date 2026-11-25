@@ -11,7 +11,8 @@ const jsFiles = assets.filter((f) => f.endsWith('.js'));
 if (!cssFile || jsFiles.length !== 1) throw new Error('Aperçu : un fichier CSS et un seul fichier JS attendus');
 
 // Les adresses du CSS partaient de assets/ ; elles partent maintenant de la page.
-const css = fs.readFileSync(path.join(dist, 'assets', cssFile), 'utf8')
+const css = fs
+  .readFileSync(path.join(dist, 'assets', cssFile), 'utf8')
   .replace(/url\((["']?)\.\.\//g, 'url($1')
   .replace(/url\((["']?)\.\//g, 'url($1assets/')
   .replace(/url\((["']?)(?!data:|assets\/|img\/|https?:)([\w-]+\.woff2?)/g, 'url($1assets/$2');
@@ -27,15 +28,17 @@ const page = `<title>Amane</title>
 <script type="module">${js}</script>
 `;
 fs.writeFileSync(path.join(dist, 'amane.html'), page);
-for (const f of [cssFile, ...jsFiles, ...assets.filter((f) => f.endsWith('.woff'))]) fs.rmSync(path.join(dist, 'assets', f));
+for (const f of [cssFile, ...jsFiles, ...assets.filter((f) => f.endsWith('.woff'))])
+  fs.rmSync(path.join(dist, 'assets', f));
 fs.rmSync(path.join(dist, 'index.html'));
 
 const files = [];
-const walk = (d) => fs.readdirSync(path.join(dist, d)).forEach((f) => {
-  const rel = path.posix.join(d, f);
-  if (fs.statSync(path.join(dist, rel)).isDirectory()) walk(rel);
-  else if (rel !== 'amane.html') files.push(rel);
-});
+const walk = (d) =>
+  fs.readdirSync(path.join(dist, d)).forEach((f) => {
+    const rel = path.posix.join(d, f);
+    if (fs.statSync(path.join(dist, rel)).isDirectory()) walk(rel);
+    else if (rel !== 'amane.html') files.push(rel);
+  });
 walk('');
 fs.writeFileSync(path.join(dist, 'fichiers.json'), JSON.stringify(files.filter((f) => f !== 'fichiers.json')));
 console.log(`dist-apercu/amane.html ${(Buffer.byteLength(page) / 1024).toFixed(0)} Ko + ${files.length} fichiers`);

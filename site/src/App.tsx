@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { LANG_META, SERVICES, dict, type Lang } from './i18n';
+import { MarkA } from './brand';
 import { finePointer, reducedMotion, useScrollFrame } from './ui';
 import { Nav, type Tone } from './components/Nav';
 import { Hero } from './components/Hero';
@@ -18,11 +19,12 @@ export function App({ lang }: { lang: Lang }) {
   useEffect(() => {
     toned.current = [...document.querySelectorAll<HTMLElement>('[data-tone]')];
     const io = new IntersectionObserver(
-      (entries) => entries.forEach((e) => {
-        if (!e.isIntersecting) return;
-        e.target.classList.add('in');
-        io.unobserve(e.target);
-      }),
+      (entries) =>
+        entries.forEach((e) => {
+          if (!e.isIntersecting) return;
+          e.target.classList.add('in');
+          io.unobserve(e.target);
+        }),
       { rootMargin: '0px 0px -7% 0px' },
     );
     document.querySelectorAll('.rv').forEach((el) => io.observe(el));
@@ -63,7 +65,12 @@ export function App({ lang }: { lang: Lang }) {
 
   return (
     <>
-      <a className="skip" href="#maison">{d.skip}</a>
+      <div className="rideau" aria-hidden="true">
+        <MarkA />
+      </div>
+      <a className="skip" href="#maison">
+        {d.skip}
+      </a>
       <Nav d={d} lang={lang} tone={tone} fab={fab} />
       <main>
         <Hero d={d} />
@@ -71,9 +78,16 @@ export function App({ lang }: { lang: Lang }) {
         <ServicesIndex d={d} rtl={rtl} />
         {SERVICES.map((s, i) => (
           <Film
-            key={s.id} id={s.id} name={s.film} portrait={s.portrait}
-            kicker={d[s.key][2]} title={d[s.key][0]} line={d[s.key][1]}
-            cta={d.ask} onAsk={() => setService(i)}
+            key={s.id}
+            id={s.id}
+            name={s.film}
+            portrait={s.portrait}
+            kicker={d[s.key][2]}
+            title={d[s.key][0]}
+            line={d[s.key][1]}
+            cta={d.ask}
+            onAsk={() => setService(i)}
+            index={[i, SERVICES.length]}
           />
         ))}
         <Film id="monde" name="arrivee" kicker={d.intl} title={d.it} line={d.ip} cta={d.cta} />

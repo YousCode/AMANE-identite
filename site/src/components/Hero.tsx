@@ -58,8 +58,14 @@ export function Hero({ d }: { d: Dict }) {
     if (r.bottom < 0) return;
     const p = Math.min(1, Math.max(0, -r.top / Math.max(1, el.offsetHeight - innerHeight)));
 
+    const ramp = (from: number, to: number) => Math.min(1, Math.max(0, (p - from) / (to - from)));
+    const fade = ramp(0.22, 0.5); // le texte s'efface
+    const out = ramp(0.84, 1); // on franchit le seuil
+    el.style.setProperty('--open', p.toFixed(3));
+    el.style.setProperty('--out', out.toFixed(3));
+    // Passé le seuil, la barre de navigation se lit sur fond clair.
+    el.dataset.tone = out > 0.55 ? 'page' : 'dark';
     if (copy.current) {
-      const fade = Math.min(1, Math.max(0, (p - 0.28) / 0.3));
       copy.current.style.opacity = String(1 - fade);
       copy.current.style.transform = `translate3d(0,${-fade * 40}px,0)`;
       copy.current.style.pointerEvents = fade > 0.9 ? 'none' : '';
@@ -91,15 +97,26 @@ export function Hero({ d }: { d: Dict }) {
   return (
     <section className="hero" id="haut" data-tone="dark" ref={section} aria-labelledby="h1">
       <div className="pin">
-        <img className="door" src={frameUrl(1)} alt={d.doorAlt} width={1280} height={726} fetchPriority="high" decoding="async" />
+        <img
+          className="door"
+          src={frameUrl(1)}
+          alt={d.doorAlt}
+          width={1280}
+          height={726}
+          fetchPriority="high"
+          decoding="async"
+        />
         <canvas className="door" ref={canvas} aria-hidden="true" />
         <div className="copy" ref={copy}>
           <p className="k">{d.hk}</p>
           <Title as="h1" id="h1" html={d.h1} />
           <p className="sub rv">{d.hs}</p>
-          <a className="btn onbx rv" href="#demande">{d.cta}</a>
+          <a className="btn onbx rv" href="#demande">
+            {d.cta}
+          </a>
         </div>
         <span className="hint" aria-hidden="true" />
+        <span className="seuil" aria-hidden="true" />
       </div>
     </section>
   );

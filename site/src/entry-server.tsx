@@ -20,14 +20,23 @@ function structuredData(lang: Lang, site: string) {
     image: `${site}/og.jpg`,
     logo: `${site}/favicon.svg`,
     address: { '@type': 'PostalAddress', addressLocality: 'Paris', postalCode: '75008', addressCountry: 'FR' },
-    areaServed: [{ '@type': 'City', name: 'Paris' }, { '@type': 'AdministrativeArea', name: 'Île-de-France' }],
+    areaServed: [
+      { '@type': 'City', name: 'Paris' },
+      { '@type': 'AdministrativeArea', name: 'Île-de-France' },
+    ],
     knowsLanguage: ['fr', 'en', 'es', 'ar'],
     hasOfferCatalog: {
       '@type': 'OfferCatalog',
       name: d.sk,
       itemListElement: SERVICES.map((s) => ({
         '@type': 'Offer',
-        itemOffered: { '@type': 'Service', name: d[s.key][0], description: d[s.key][1], url: `${url}#${s.id}`, areaServed: 'Paris' },
+        itemOffered: {
+          '@type': 'Service',
+          name: d[s.key][0],
+          description: d[s.key][1],
+          url: `${url}#${s.id}`,
+          areaServed: 'Paris',
+        },
       })),
     },
   };
@@ -37,9 +46,34 @@ function structuredData(lang: Lang, site: string) {
     '@context': 'https://schema.org',
     '@graph': [
       business,
-      { '@type': 'WebSite', '@id': `${site}/#site`, url: `${site}/`, name: 'Amane', inLanguage: LANGS, publisher: { '@id': `${site}/#amane` } },
-      { '@type': 'WebPage', '@id': `${url}#page`, url, name: d.metaTitle, description: d.metaDesc, inLanguage: lang, isPartOf: { '@id': `${site}/#site` }, about: { '@id': `${site}/#amane` } },
-      { '@type': 'FAQPage', '@id': `${url}#faq`, inLanguage: lang, mainEntity: d.qa.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) },
+      {
+        '@type': 'WebSite',
+        '@id': `${site}/#site`,
+        url: `${site}/`,
+        name: 'Amane',
+        inLanguage: LANGS,
+        publisher: { '@id': `${site}/#amane` },
+      },
+      {
+        '@type': 'WebPage',
+        '@id': `${url}#page`,
+        url,
+        name: d.metaTitle,
+        description: d.metaDesc,
+        inLanguage: lang,
+        isPartOf: { '@id': `${site}/#site` },
+        about: { '@id': `${site}/#amane` },
+      },
+      {
+        '@type': 'FAQPage',
+        '@id': `${url}#faq`,
+        inLanguage: lang,
+        mainEntity: d.qa.map(([q, a]) => ({
+          '@type': 'Question',
+          name: q,
+          acceptedAnswer: { '@type': 'Answer', text: a },
+        })),
+      },
     ],
   };
 }
@@ -62,10 +96,14 @@ function head(lang: Lang, site: string) {
     `<meta property="og:image:width" content="1200">`,
     `<meta property="og:image:height" content="630">`,
     `<meta property="og:locale" content="${LANG_META[lang].locale}">`,
-    ...LANGS.filter((l) => l !== lang).map((l) => `<meta property="og:locale:alternate" content="${LANG_META[l].locale}">`),
+    ...LANGS.filter((l) => l !== lang).map(
+      (l) => `<meta property="og:locale:alternate" content="${LANG_META[l].locale}">`,
+    ),
     `<meta name="twitter:card" content="summary_large_image">`,
     `<link rel="preload" as="image" href="/frames/f_001.jpg" fetchpriority="high">`,
-    ...(lang === 'ar' ? [] : [bodoni, jost].map((f) => `<link rel="preload" as="font" type="font/woff2" href="${f}" crossorigin>`)),
+    ...(lang === 'ar'
+      ? []
+      : [bodoni, jost].map((f) => `<link rel="preload" as="font" type="font/woff2" href="${f}" crossorigin>`)),
     `<script type="application/ld+json">${JSON.stringify(structuredData(lang, site)).replace(/</g, '\\u003c')}</script>`,
   ];
   return tags.join('\n');

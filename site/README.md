@@ -11,20 +11,22 @@ npm run dev        # http://localhost:5173 (et /en/, /es/, /ar/)
 npm run build      # dist/ : pages HTML, plan du site, robots.txt
 npm run preview    # sert dist/ sur http://localhost:4173
 npm test           # 69 tests de la fonction /api/lead
+npm run apercu     # dist-apercu/ : page autonome, pour montrer le site sans hébergement
+npm run format     # met en forme tout le code (Prettier)
 ```
 
 ## Contenu
 
-| Chemin | Rôle |
-|---|---|
-| `src/App.tsx`, `src/components/` | La page : ouverture (porte cochère), maison, services, films, rituel, flotte, questions, demande |
-| `src/i18n-base.json`, `src/i18n.ts` | Tous les textes, en français, anglais, espagnol et arabe |
-| `src/styles.css` | Styles. La palette de l'édition 02 est dans le bloc `:root`, nulle part ailleurs |
-| `src/entry-server.tsx`, `scripts/prerender.mjs` | Pré-rendu : balises de référencement, données structurées, `sitemap.xml`, `robots.txt` |
-| `api/lead.js`, `api/_lib/` | Fonction serveur du formulaire : e-mail à l'équipe et accusé de réception au client |
-| `public/frames/` | Les 48 images de la porte qui s'ouvre au défilement |
-| `public/video/`, `public/img/` | Films des services (MP4 + WebM), affiches, photos de la flotte, motif Arcades |
-| `src/brand/` | Logos copiés depuis `../logos/svg/` (couleur pilotée par le CSS) |
+| Chemin                                          | Rôle                                                                                             |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `src/App.tsx`, `src/components/`                | La page : ouverture (porte cochère), maison, services, films, rituel, flotte, questions, demande |
+| `src/i18n-base.json`, `src/i18n.ts`             | Tous les textes, en français, anglais, espagnol et arabe                                         |
+| `src/styles.css`                                | Styles. La palette de l'édition 02 est dans le bloc `:root`, nulle part ailleurs                 |
+| `src/entry-server.tsx`, `scripts/prerender.mjs` | Pré-rendu : balises de référencement, données structurées, `sitemap.xml`, `robots.txt`           |
+| `api/lead.js`, `api/_lib/`                      | Fonction serveur du formulaire : e-mail à l'équipe et accusé de réception au client              |
+| `public/frames/`                                | Les 48 images de la porte qui s'ouvre au défilement                                              |
+| `public/video/`, `public/img/`                  | Films des services (MP4 + WebM), affiches, photos de la flotte, motif Arcades                    |
+| `src/brand/`                                    | Logos copiés depuis `../logos/svg/` (couleur pilotée par le CSS)                                 |
 
 ## Mise en ligne sur Vercel
 

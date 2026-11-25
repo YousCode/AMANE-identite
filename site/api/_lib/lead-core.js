@@ -163,7 +163,9 @@ export function origineAutorisee(origin, host, autorisees) {
   }
   if (url.protocol !== 'https:' && url.protocol !== 'http:') return false;
   const hoteOrigine = url.host.toLowerCase();
-  const hote = String(host ?? '').trim().toLowerCase();
+  const hote = String(host ?? '')
+    .trim()
+    .toLowerCase();
   if (hote && hoteOrigine === hote) return true;
 
   for (const brute of String(autorisees ?? '').split(',')) {

@@ -292,7 +292,14 @@ describe('envoi', () => {
     assert.deepEqual(equipe.corps.to, [{ email: 'equipe@amane.test' }]);
     assert.deepEqual(equipe.corps.replyTo, { email: 'jeanne.martin@example.com', name: 'Jeanne Martin' });
     assert.equal(equipe.corps.subject, 'Nouvelle demande — Chauffeur — Jeanne Martin');
-    for (const valeur of ['Jeanne Martin', 'jeanne.martin@example.com', '+33 6 12 34 56 78', 'Chauffeur', '12 décembre, 19 h', 'Un transfert depuis Roissy.']) {
+    for (const valeur of [
+      'Jeanne Martin',
+      'jeanne.martin@example.com',
+      '+33 6 12 34 56 78',
+      'Chauffeur',
+      '12 décembre, 19 h',
+      'Un transfert depuis Roissy.',
+    ]) {
       assert.ok(equipe.corps.htmlContent.includes(valeur), `HTML équipe : ${valeur}`);
       assert.ok(equipe.corps.textContent.includes(valeur), `texte équipe : ${valeur}`);
     }
@@ -367,7 +374,10 @@ describe('envoi', () => {
     const journal = capterErreurs(t);
     await envoyer({ message: 'SECRET-DU-CLIENT' }, { fetch: fauxFetch(500) });
     _viderLimite();
-    await envoyer({ message: 'SECRET-DU-CLIENT' }, { fetch: fauxFetch(201, new Error(`boum ${CLE} SECRET-DU-CLIENT`)) });
+    await envoyer(
+      { message: 'SECRET-DU-CLIENT' },
+      { fetch: fauxFetch(201, new Error(`boum ${CLE} SECRET-DU-CLIENT`)) },
+    );
     const tout = journal.join('\n');
     assert.equal(journal.length, 2);
     assert.ok(tout.includes('500'));
@@ -477,14 +487,25 @@ describe('sécurité du contenu', () => {
     const r = await envoyer({ nom: 'Jean Dupont\r\nBcc: pirate@example.com\r\n\r\nCorps forgé' });
     assert.equal(r.status, 200);
     const [equipe, accuse] = r.appels;
-    assert.equal(equipe.corps.subject, 'Nouvelle demande — Chauffeur — Jean Dupont Bcc: pirate@example.com Corps forgé');
-    for (const valeur of [equipe.corps.subject, equipe.corps.replyTo.name, accuse.corps.subject, accuse.corps.to[0].name]) {
+    assert.equal(
+      equipe.corps.subject,
+      'Nouvelle demande — Chauffeur — Jean Dupont Bcc: pirate@example.com Corps forgé',
+    );
+    for (const valeur of [
+      equipe.corps.subject,
+      equipe.corps.replyTo.name,
+      accuse.corps.subject,
+      accuse.corps.to[0].name,
+    ]) {
       assert.ok(!/[\r\n\u2028\u2029]/.test(valeur), JSON.stringify(valeur));
     }
     for (const { corps } of r.appels) {
-      assert.deepEqual(Object.keys(corps).sort(), Object.keys(corps).includes('replyTo')
-        ? ['htmlContent', 'replyTo', 'sender', 'subject', 'textContent', 'to']
-        : ['htmlContent', 'sender', 'subject', 'textContent', 'to']);
+      assert.deepEqual(
+        Object.keys(corps).sort(),
+        Object.keys(corps).includes('replyTo')
+          ? ['htmlContent', 'replyTo', 'sender', 'subject', 'textContent', 'to']
+          : ['htmlContent', 'sender', 'subject', 'textContent', 'to'],
+      );
       assert.equal('bcc' in corps, false);
       assert.equal('cc' in corps, false);
     }
@@ -501,7 +522,11 @@ describe('sécurité du contenu', () => {
   });
 
   test('injection d’en-tête par l’e-mail → 400 email_invalide', async () => {
-    for (const email of ['jeanne@example.com\r\nBcc: pirate@example.com', 'jeanne@example.com\nBcc:pirate@example.com', 'jeanne@example.com%0ABcc:x@y.z']) {
+    for (const email of [
+      'jeanne@example.com\r\nBcc: pirate@example.com',
+      'jeanne@example.com\nBcc:pirate@example.com',
+      'jeanne@example.com%0ABcc:x@y.z',
+    ]) {
       const r = await envoyer({ email });
       assert.equal(r.status, 400, JSON.stringify(email));
       assert.deepEqual(r.json, { error: 'email_invalide' });
@@ -671,7 +696,10 @@ describe('handler Vercel', () => {
   test('POST : origine étrangère → 403', async (t) => {
     const appels = simuler(t);
     const res = fausseReponse();
-    await handler(fausseRequete({ corps: JSON.stringify(DEMANDE), headers: { origin: 'https://pirate.example' } }), res);
+    await handler(
+      fausseRequete({ corps: JSON.stringify(DEMANDE), headers: { origin: 'https://pirate.example' } }),
+      res,
+    );
     assert.equal(res.statusCode, 403);
     assert.deepEqual(res.json, { error: 'origine_refusee' });
     assert.equal(appels.length, 0);

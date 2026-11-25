@@ -16,7 +16,8 @@ if (!process.env.SITE_URL && !fromVercel) {
 
 const { render, LANGS, LANG_META } = await import(pathToFileURL(path.join(root, 'dist-ssr', 'entry-server.js')).href);
 const template = fs.readFileSync(path.join(dist, 'index.html'), 'utf8');
-if (!template.includes('<!--app-->') || !template.includes('<!--head-->')) throw new Error('Gabarit index.html : repères absents');
+if (!template.includes('<!--app-->') || !template.includes('<!--head-->'))
+  throw new Error('Gabarit index.html : repères absents');
 
 for (const lang of LANGS) {
   const { html, head, dir } = render(lang, site);
@@ -31,20 +32,27 @@ for (const lang of LANGS) {
 }
 
 const today = new Date().toISOString().slice(0, 10);
-const alternates = LANGS.map((l) => `    <xhtml:link rel="alternate" hreflang="${l}" href="${site + LANG_META[l].path}"/>`).join('\n');
+const alternates = LANGS.map(
+  (l) => `    <xhtml:link rel="alternate" hreflang="${l}" href="${site + LANG_META[l].path}"/>`,
+).join('\n');
 fs.writeFileSync(
   path.join(dist, 'sitemap.xml'),
   `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
-${LANGS.map((l) => `  <url>
+${LANGS.map(
+  (l) => `  <url>
     <loc>${site + LANG_META[l].path}</loc>
     <lastmod>${today}</lastmod>
 ${alternates}
     <xhtml:link rel="alternate" hreflang="x-default" href="${site}/"/>
-  </url>`).join('\n')}
+  </url>`,
+).join('\n')}
 </urlset>
 `,
 );
-fs.writeFileSync(path.join(dist, 'robots.txt'), `User-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: ${site}/sitemap.xml\n`);
+fs.writeFileSync(
+  path.join(dist, 'robots.txt'),
+  `User-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: ${site}/sitemap.xml\n`,
+);
 fs.rmSync(path.join(root, 'dist-ssr'), { recursive: true, force: true });
 console.log('sitemap.xml, robots.txt → ' + site);
