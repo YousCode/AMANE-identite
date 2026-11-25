@@ -6,3 +6,5 @@ dist-ssr/
 .vercel/
 dist-apercu/
 dist-ovh/
+amane-config.php
+amane-data/
