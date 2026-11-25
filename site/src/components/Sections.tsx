@@ -29,7 +29,7 @@ export function Maison({ d, lang }: Props) {
             </a>
           </div>
           <figure className="maison__vue rv">
-            <div className="maison__cadre">
+            <div className="maison__cadre" data-drift>
               <div className="arche">
                 <Loop name="rivoli" />
               </div>
@@ -86,13 +86,15 @@ export function Chapitre({ d, lang, index, children }: Props & { index: number; 
   const id = `chapitre-${CHAPTERS[index].id}`;
   return (
     <>
-      <section className="chapitre" id={id} data-tone="page" aria-labelledby={`${id}-t`}>
-        <div className="wrap">
-          <p className="k rv">
-            {d.chap} {numerals(lang)[index]}
-          </p>
-          <Title id={`${id}-t`} html={title} />
-          <p className="lead rv">{text}</p>
+      <section className="chapitre scene" id={id} data-tone="page" aria-labelledby={`${id}-t`}>
+        <div className="scene__pin">
+          <div className="wrap">
+            <p className="k rv">
+              {d.chap} {numerals(lang)[index]}
+            </p>
+            <Title id={`${id}-t`} html={title} />
+            <p className="lead rv">{text}</p>
+          </div>
         </div>
       </section>
       {children}
@@ -120,24 +122,26 @@ type FilmProps = {
 /** Film plein cadre. Le logotype reste dans l'angle de chaque film, quel que soit le recadrage. */
 export function Film({ id, name, portrait, kicker, title, line, cta, onAsk, rank, flip, note }: FilmProps) {
   return (
-    <section className={`film${flip ? ' flip' : ''}`} id={id} data-tone="dark" aria-labelledby={`${id}-t`}>
-      <Loop name={name} portrait={portrait} />
-      <div className="cap">
-        <p className="k rv">{kicker}</p>
-        <Title as="h3" id={`${id}-t`} html={title} />
-        <p className="ln rv">{line}</p>
-        {note && <p className="note rv">{note}</p>}
-        <a className="link rv" href="#demande" onClick={onAsk}>
-          {cta}
-        </a>
-      </div>
-      <div className="coin" aria-hidden="true">
-        {rank && (
-          <p className="rang">
-            {rank} <i />
-          </p>
-        )}
-        <Logotype className="griffe" decorative />
+    <section className={`film scene${flip ? ' flip' : ''}`} id={id} data-tone="dark" aria-labelledby={`${id}-t`}>
+      <div className="scene__pin">
+        <Loop name={name} portrait={portrait} />
+        <div className="cap">
+          <p className="k rv">{kicker}</p>
+          <Title as="h3" id={`${id}-t`} html={title} />
+          <p className="ln rv">{line}</p>
+          {note && <p className="note rv">{note}</p>}
+          <a className="link rv" href="#demande" onClick={onAsk}>
+            {cta}
+          </a>
+        </div>
+        <div className="coin" aria-hidden="true">
+          {rank && (
+            <p className="rang">
+              {rank} <i />
+            </p>
+          )}
+          <Logotype className="griffe" decorative />
+        </div>
       </div>
     </section>
   );
@@ -163,7 +167,7 @@ export function Rituel({ d, lang }: Props) {
             ))}
           </ol>
         </div>
-        <div className="arche rv">
+        <div className="arche rv" data-drift>
           <Loop name="cles" />
         </div>
       </div>
@@ -185,7 +189,7 @@ export function Flotte({ d }: { d: Dict }) {
         <div className="fleet">
           {FLEET.map((f) => (
             <figure className="rv" key={f.key}>
-              <div className="ph">
+              <div className="ph" data-drift>
                 <img
                   src={asset(f.img)}
                   alt={`${d[f.key][0]} — Amane, Paris`}

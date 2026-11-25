@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { CHAPTERS, SERVICES, dict, numerals, type Lang } from './i18n';
 import { CABINETS } from './config';
 import { finePointer, reducedMotion, smooth } from './ui';
+import { useScenes } from './scenes';
 import { Sprite } from './brand';
 import { Nav } from './components/Nav';
 import { Epilogue, Hero } from './components/Hero';
@@ -14,6 +15,8 @@ export function App({ lang }: { lang: Lang }) {
   const num = numerals(lang);
   const [service, setService] = useState(0);
   const cabinets = CABINETS.length ? `${d.eList} : ${CABINETS.join(' · ')}` : undefined;
+
+  useScenes();
 
   // Apparition des blocs à l'entrée dans l'écran, une seule fois.
   useEffect(() => {

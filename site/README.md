@@ -48,6 +48,10 @@ Le formulaire répond « envoi impossible » tant que `BREVO_API_KEY`, `LEAD_TO_
 
 La devise de la maison, « Arrive as a Guest. Leave with a Story. », structure la page : sa première moitié ouvre le site, la seconde le referme. Entre les deux, les services sont regroupés en six chapitres (`CHAPTERS` dans `src/i18n.ts`) : l'arrivée, la route, l'adresse, la table, le temps pour soi, tout le reste.
 
+## Le défilement
+
+`src/scenes.ts` écrit à chaque image quatre variables CSS (`--enter`, `--leave`, `--drift`, `--page`) ; tout le mouvement est décrit dans `src/styles.css`. Les films et les ouvertures de chapitre sont des « scènes » : chacune reste épinglée pendant que la suivante glisse par-dessus. Avec le réglage système « réduire les animations », la page redevient un défilement simple.
+
 ## Les services
 
 La liste est dans `src/i18n.ts` (`SERVICES`) et, côté serveur, dans `api/_lib/lead-core.js` : les deux doivent rester identiques.

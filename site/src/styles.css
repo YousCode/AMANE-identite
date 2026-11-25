@@ -785,13 +785,11 @@ html[dir='rtl'] .index a::before {
 
 /* ───── Films plein cadre ───── */
 .film {
-  position: relative;
-  height: 100vh;
-  height: 100svh;
-  min-height: 520px;
-  overflow: hidden;
-  background: var(--noir);
   color: var(--pierre);
+}
+.film .scene__pin {
+  min-height: 520px;
+  background: var(--noir);
 }
 .film video {
   position: absolute;
@@ -800,8 +798,11 @@ html[dir='rtl'] .index a::before {
   height: 100%;
   object-fit: cover;
   transform-origin: 50% 60%;
+  transform: translate3d(0, calc(var(--leave, 0) * -7%), 0)
+    scale(calc(1.16 - var(--enter, 1) * 0.16 + var(--leave, 0) * 0.05));
+  will-change: transform;
 }
-.film::after {
+.film .scene__pin::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -1434,65 +1435,6 @@ html:not(.js) .rideau {
   transition-delay: 0.8s, 0.8s, 0s, 0s, 0s;
 }
 
-/* Zoom lent des films à l'approche (navigateurs compatibles, hors mouvement réduit) */
-@supports (animation-timeline: view()) {
-  @media (prefers-reduced-motion: no-preference) {
-    .film video {
-      animation: approche linear both;
-      animation-timeline: view();
-      animation-range: entry 0% cover 50%;
-    }
-    @keyframes approche {
-      from {
-        transform: scale(1.14);
-      }
-      to {
-        transform: scale(1);
-      }
-    }
-    /* Le film qui sort s'assombrit pendant que le suivant arrive */
-    .film::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      z-index: 3;
-      background: var(--noir);
-      opacity: 0;
-      pointer-events: none;
-      animation: sortie linear both;
-      animation-timeline: view();
-      animation-range: exit 0% exit 100%;
-    }
-    @keyframes sortie {
-      to {
-        opacity: 0.7;
-      }
-    }
-    /* Fil d'or : avancement dans la page */
-    .nav::after {
-      content: '';
-      position: absolute;
-      inset: auto 0 -1px;
-      height: 1px;
-      background: var(--or);
-      transform-origin: left;
-      animation: avance linear both;
-      animation-timeline: scroll(root);
-    }
-    html[dir='rtl'] .nav::after {
-      transform-origin: right;
-    }
-    @keyframes avance {
-      from {
-        transform: scaleX(0);
-      }
-      to {
-        transform: scaleX(1);
-      }
-    }
-  }
-}
-
 /* ───── Tablette et téléphone ───── */
 @media (max-width: 1020px) {
   :root {
@@ -2053,23 +1995,6 @@ html[dir='rtl'] .f__label {
   white-space: nowrap;
 }
 
-@supports (animation-timeline: view()) {
-  @media (prefers-reduced-motion: no-preference) {
-    .maison__sceau {
-      animation: cachet linear both;
-      animation-timeline: view();
-      animation-range: entry 0% exit 100%;
-    }
-    @keyframes cachet {
-      from {
-        transform: rotate(-38deg);
-      }
-      to {
-        transform: rotate(38deg);
-      }
-    }
-  }
-}
 @media (max-width: 1020px) {
   .maison__haut,
   .jeu .two,
@@ -2158,9 +2083,13 @@ html[dir='rtl'] .f__label {
 
 /* ───── Le récit : ouverture de chapitre ───── */
 .chapitre {
-  background: var(--papier);
-  padding: clamp(120px, 17vw, 230px) var(--gr) clamp(100px, 13vw, 180px) var(--gl);
   text-align: center;
+}
+.chapitre .scene__pin {
+  display: grid;
+  place-items: center;
+  padding: var(--navh) var(--gr) 0 var(--gl);
+  background: var(--papier);
 }
 .chapitre .k {
   display: inline-flex;
@@ -2274,4 +2203,101 @@ html[dir='rtl'] .film h3 {
 }
 .hero .suite {
   max-width: 34ch;
+}
+
+/* ───── Scènes : le défilement mis en scène ─────
+   Une scène fait deux écrans de haut et chevauche la suivante d'un écran : son contenu reste épinglé
+   pendant que la scène suivante glisse par-dessus. Les variables --enter, --leave, --drift et --page
+   sont écrites par src/scenes.ts ; sans script, leurs valeurs par défaut donnent la page au repos. */
+.scene {
+  position: relative;
+  height: 200vh;
+  height: 200svh;
+  margin-bottom: -100vh;
+  margin-bottom: -100svh;
+  background: var(--noir);
+}
+.scene__pin {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+}
+/* La scène qui part recule et s'assombrit */
+.scene__pin::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background: var(--noir);
+  opacity: calc(var(--leave, 0) * 0.55);
+  pointer-events: none;
+}
+/* Celle qui arrive porte une ombre sur la précédente */
+.scene + *,
+.scene + .scene .scene__pin {
+  box-shadow: 0 -24px 60px -30px rgba(var(--noir-rgb), 0.45);
+}
+.film .cap {
+  transform: translate3d(0, calc(var(--leave, 0) * -70px), 0);
+  opacity: calc(1 - var(--leave, 0) * 1.5);
+}
+.film .coin {
+  opacity: calc(1 - var(--leave, 0) * 1.5);
+}
+.chapitre .wrap {
+  transform: translate3d(0, calc(var(--leave, 0) * -90px), 0);
+  opacity: calc(1 - var(--leave, 0) * 1.3);
+}
+.chapitre .scene__pin::before {
+  opacity: calc(var(--leave, 0) * 0.22);
+}
+
+/* Dérive : l'image glisse un peu moins vite que son cadre */
+.fleet img {
+  transform: translate3d(0, calc(var(--drift, 0) * -5%), 0) scale(1.12);
+}
+.fleet figure:hover img {
+  transform: translate3d(0, calc(var(--drift, 0) * -5%), 0) scale(1.16);
+}
+.arche video {
+  transform: translate3d(0, calc(var(--drift, 0) * -5%), 0) scale(1.12);
+}
+.maison__sceau {
+  transform: rotate(calc(var(--drift, 0) * 42deg));
+}
+
+/* Fil d'or : avancement dans la page */
+.nav::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 -1px;
+  height: 1px;
+  background: var(--or);
+  transform-origin: left;
+  transform: scaleX(var(--page, 0));
+}
+html[dir='rtl'] .nav::after {
+  transform-origin: right;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene {
+    height: auto;
+    margin-bottom: 0;
+  }
+  .scene__pin {
+    position: relative;
+  }
+  .scene__pin::before,
+  .nav::after {
+    display: none;
+  }
+  .film video,
+  .fleet img,
+  .arche video,
+  .maison__sceau {
+    transform: none;
+  }
 }
