@@ -1,8 +1,9 @@
 import { useState, type CSSProperties } from 'react';
-import { CARDS, FLEET, SERVICES, numerals, type Dict, type Lang } from '../i18n';
+import type { ReactNode } from 'react';
+import { CARDS, CHAPTERS, FLEET, SERVICES, SLOGAN, numerals, type Dict, type Lang } from '../i18n';
 import { Logotype, Sceau } from '../brand';
 import { asset } from '../config';
-import { Title } from '../ui';
+import { Rich, Title } from '../ui';
 import { Loop } from './Loop';
 
 type Props = { d: Dict; lang: Lang };
@@ -51,9 +52,10 @@ export function Maison({ d, lang }: Props) {
   );
 }
 
-/** Tous les services d'un coup d'œil ; chaque ligne mène à son film. */
+/** Le sommaire : six chapitres, et sous chaque titre les services qu'il raconte. */
 export function ServicesIndex({ d, lang }: Props) {
   const num = numerals(lang);
+  const name = (id: string) => d[SERVICES.find((s) => s.id === id)!.key][0];
   return (
     <section className="sec tight" id="services" data-tone="page" aria-labelledby="st">
       <div className="wrap">
@@ -63,18 +65,38 @@ export function ServicesIndex({ d, lang }: Props) {
           <p className="lead rv">{d.sn}</p>
         </div>
         <ol className="index">
-          {SERVICES.map((s, i) => (
-            <li className="rv" key={s.id}>
-              <a href={`#${s.id}`}>
+          {CHAPTERS.map((c, i) => (
+            <li className="rv" key={c.id}>
+              <a href={`#chapitre-${c.id}`}>
                 <b aria-hidden="true">{num[i]}</b>
-                <strong>{d[s.key][0]}</strong>
-                <span>{d[s.key][2]}</span>
+                <strong>{d.chapters[i][0]}</strong>
+                <span>{c.services.map(name).join(' · ')}</span>
               </a>
             </li>
           ))}
         </ol>
       </div>
     </section>
+  );
+}
+
+/** L'ouverture d'un chapitre : son numéro, son titre, une phrase. Les films du chapitre suivent. */
+export function Chapitre({ d, lang, index, children }: Props & { index: number; children: ReactNode }) {
+  const [title, text] = d.chapters[index];
+  const id = `chapitre-${CHAPTERS[index].id}`;
+  return (
+    <>
+      <section className="chapitre" id={id} data-tone="page" aria-labelledby={`${id}-t`}>
+        <div className="wrap">
+          <p className="k rv">
+            {d.chap} {numerals(lang)[index]}
+          </p>
+          <Title id={`${id}-t`} html={title} />
+          <p className="lead rv">{text}</p>
+        </div>
+      </section>
+      {children}
+    </>
   );
 }
 
@@ -87,20 +109,22 @@ type FilmProps = {
   line: string;
   cta: string;
   onAsk?: () => void;
-  /** Rang du service et total, déjà écrits dans la numérotation de la langue (« II », « VI »). */
-  rank?: [string, string];
+  /** Numéro du chapitre, déjà écrit dans la numérotation de la langue (« II »). */
+  rank?: string;
+  /** Texte à droite plutôt qu'à gauche : un film sur deux, pour le rythme. */
+  flip?: boolean;
   /** Mention sous le texte (liste des cabinets partenaires). */
   note?: string;
 };
 
 /** Film plein cadre. Le logotype reste dans l'angle de chaque film, quel que soit le recadrage. */
-export function Film({ id, name, portrait, kicker, title, line, cta, onAsk, rank, note }: FilmProps) {
+export function Film({ id, name, portrait, kicker, title, line, cta, onAsk, rank, flip, note }: FilmProps) {
   return (
-    <section className="film" id={id} data-tone="dark" aria-labelledby={`${id}-t`}>
+    <section className={`film${flip ? ' flip' : ''}`} id={id} data-tone="dark" aria-labelledby={`${id}-t`}>
       <Loop name={name} portrait={portrait} />
       <div className="cap">
         <p className="k rv">{kicker}</p>
-        <Title id={`${id}-t`} html={title} />
+        <Title as="h3" id={`${id}-t`} html={title} />
         <p className="ln rv">{line}</p>
         {note && <p className="note rv">{note}</p>}
         <a className="link rv" href="#demande" onClick={onAsk}>
@@ -109,8 +133,8 @@ export function Film({ id, name, portrait, kicker, title, line, cta, onAsk, rank
       </div>
       <div className="coin" aria-hidden="true">
         {rank && (
-          <p className="rang" dir="ltr">
-            {rank[0]} <i /> {rank[1]}
+          <p className="rang">
+            {rank} <i />
           </p>
         )}
         <Logotype className="griffe" decorative />
@@ -264,6 +288,9 @@ export function Footer({ d }: { d: Dict }) {
   return (
     <footer className="pied" data-tone="bx">
       <Logotype className="pied__logo" />
+      <p className="pied__devise" lang="en">
+        <Rich html={SLOGAN.join(' ')} />
+      </p>
       <div className="txt">
         <span>{d.fo1}</span>
         <span>{d.fo2}</span>

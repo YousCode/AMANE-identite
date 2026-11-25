@@ -120,6 +120,11 @@ type Extra = {
   s10: Triple;
   /** Intitulé de la liste des cabinets partenaires, quand elle est renseignée */
   eList: string;
+  /** Le récit : six chapitres entre le prologue (la porte s'ouvre) et l'épilogue (elle se referme) */
+  chap: string;
+  chapters: [Pair, Pair, Pair, Pair, Pair, Pair];
+  epK: string;
+  epT: string;
   /** Jeu de cartes */
   jk: string;
   jt: string;
@@ -180,6 +185,23 @@ const extra: Record<Lang, Extra> = {
       'Cabinets partenaires · Paris',
     ],
     eList: 'Cabinets partenaires',
+    chap: 'Chapitre',
+    chapters: [
+      [
+        'L’arrivée',
+        'Vous atterrissez, on vous attend déjà. Les bagages sont pris, la portière est ouverte, Paris commence.',
+      ],
+      ['La route', 'La voiture qui vous ressemble, ou un chauffeur qui connaît chaque rue. Vous choisissez le rythme.'],
+      ['L’adresse', 'Une suite pour quelques nuits, un appartement pour une saison, un bien pour la vie.'],
+      ['La table', 'La table qu’on ne trouve plus, le dîner qu’on n’oublie pas. Nous réservons, nous composons.'],
+      ['Le temps pour soi', 'Une matinée faubourg Saint-Honoré, un rendez-vous que personne n’a besoin de connaître.'],
+      [
+        'Tout le reste',
+        'Ce qui n’entre dans aucune case. Demandez : c’est souvent là que l’histoire devient la vôtre.',
+      ],
+    ],
+    epK: 'Épilogue',
+    epT: 'La porte se referme. <em>L’histoire, elle, vous suit.</em>',
     jk: 'Le jeu Amane',
     jt: 'Quatre figures, <em>une seule maison.</em>',
     jp: 'Cinquante-quatre cartes dessinées pour Amane. Le Voiturier, la Parisienne, le Gentleman et le Majordome y tiennent les rôles du valet, de la dame, du roi et du joker.',
@@ -235,6 +257,17 @@ const extra: Record<Lang, Extra> = {
       'Partner clinics · Paris',
     ],
     eList: 'Partner clinics',
+    chap: 'Chapter',
+    chapters: [
+      ['The arrival', 'You land; we are already waiting. Your luggage is taken, the door is open, Paris begins.'],
+      ['The road', 'The car that suits you, or a chauffeur who knows every street. You set the pace.'],
+      ['The address', 'A suite for a few nights, an apartment for a season, a property for life.'],
+      ['The table', 'The table no one can get, the dinner no one forgets. We reserve, we compose.'],
+      ['Time for yourself', 'A morning on the Faubourg Saint-Honoré, an appointment no one needs to know about.'],
+      ['Everything else', 'Whatever fits no category. Ask: that is often where the story becomes yours.'],
+    ],
+    epK: 'Epilogue',
+    epT: 'The door closes. <em>The story stays with you.</em>',
     jk: 'The Amane deck',
     jt: 'Four figures, <em>one house.</em>',
     jp: 'Fifty-four cards drawn for Amane. Le Voiturier, la Parisienne, le Gentleman and le Majordome play the jack, the queen, the king and the joker.',
@@ -290,6 +323,20 @@ const extra: Record<Lang, Extra> = {
       'Clínicas asociadas · París',
     ],
     eList: 'Clínicas asociadas',
+    chap: 'Capítulo',
+    chapters: [
+      ['La llegada', 'Usted aterriza y ya le esperamos. El equipaje está recogido, la puerta abierta, París empieza.'],
+      ['El camino', 'El coche que va con usted, o un chófer que conoce cada calle. Usted marca el ritmo.'],
+      [
+        'La dirección',
+        'Una suite para unas noches, un apartamento para una temporada, una propiedad para toda la vida.',
+      ],
+      ['La mesa', 'La mesa imposible, la cena inolvidable. Nosotros reservamos, nosotros componemos.'],
+      ['Tiempo para usted', 'Una mañana en el Faubourg Saint-Honoré, una cita que nadie necesita conocer.'],
+      ['Todo lo demás', 'Lo que no cabe en ninguna casilla. Pídalo: a menudo ahí la historia se vuelve suya.'],
+    ],
+    epK: 'Epílogo',
+    epT: 'La puerta se cierra. <em>La historia le acompaña.</em>',
     jk: 'La baraja Amane',
     jt: 'Cuatro figuras, <em>una sola casa.</em>',
     jp: 'Cincuenta y cuatro cartas dibujadas para Amane. Le Voiturier, la Parisienne, le Gentleman y le Majordome hacen de jota, dama, rey y comodín.',
@@ -341,6 +388,17 @@ const extra: Record<Lang, Extra> = {
       'العيادات الشريكة · باريس',
     ],
     eList: 'العيادات الشريكة',
+    chap: 'الفصل',
+    chapters: [
+      ['الوصول', 'تهبط طائرتك ونحن في انتظارك. الحقائب في أيدٍ أمينة، والباب مفتوح، وباريس تبدأ.'],
+      ['الطريق', 'السيارة التي تشبهك، أو سائق يعرف كل شارع. وأنت من يحدّد الإيقاع.'],
+      ['العنوان', 'جناح لبضع ليالٍ، أو شقة لموسم، أو عقار للعمر.'],
+      ['المائدة', 'الطاولة التي يصعب حجزها، والعشاء الذي لا يُنسى. نحن نحجز ونرتّب.'],
+      ['وقت لك', 'صباح في فوبور سان أونوريه، وموعد لا يحتاج أحد إلى معرفته.'],
+      ['كل ما عدا ذلك', 'كل ما لا يندرج تحت أي خانة. اطلب: فهناك غالباً تصبح القصة قصتك.'],
+    ],
+    epK: 'الخاتمة',
+    epT: 'يُغلق الباب. <em>والقصة ترافقك.</em>',
     jk: 'ورق لعب Amane',
     jt: 'أربع شخصيات، <em>ودار واحدة.</em>',
     jp: 'أربع وخمسون ورقة رُسمت خصيصاً لـAmane. يؤدّي فيها Le Voiturier وLa Parisienne وLe Gentleman وLe Majordome أدوار الولد والملكة والملك والجوكر.',
@@ -377,13 +435,18 @@ export function dict(lang: Lang): Dict {
 }
 
 /**
- * Tout ce que fait Amane, dans l'ordre de la page. `id` sert d'ancre et d'identifiant envoyé au serveur
- * (la même liste est tenue dans api/_lib/lead-core.js) ; `film` et `portrait` nomment les fichiers de public/video.
+ * La devise de la maison, en anglais dans toutes les langues : la première moitié ouvre le site, la seconde le referme.
+ */
+export const SLOGAN = ['Arrive as a <em>Guest.</em>', 'Leave with a <em>Story.</em>'] as const;
+
+/**
+ * Tout ce que fait Amane. `id` sert d'ancre et d'identifiant envoyé au serveur (la même liste est tenue
+ * dans api/_lib/lead-core.js) ; `film` et `portrait` nomment les fichiers de public/video.
  */
 export const SERVICES = [
+  { key: 's3', id: 'van', film: 'van', portrait: 'm-van' },
   { key: 's1', id: 'voitures', film: 'jour-montaigne', portrait: '' },
   { key: 's2', id: 'chauffeur', film: 'volant', portrait: 'm-chauffeur' },
-  { key: 's3', id: 'van', film: 'van', portrait: 'm-van' },
   { key: 's5', id: 'sejours', film: 'salon', portrait: '' },
   { key: 's7', id: 'immobilier', film: 'appartement', portrait: 'm-appartement' },
   { key: 's8', id: 'tables', film: 'table', portrait: 'm-table' },
@@ -392,6 +455,18 @@ export const SERVICES = [
   { key: 's10', id: 'esthetique', film: 'clinique', portrait: 'm-clinique' },
   { key: 's6', id: 'conciergerie', film: 'cour', portrait: '' },
 ] as const;
+
+export type ServiceId = (typeof SERVICES)[number]['id'];
+
+/** Le récit : chaque chapitre réunit un ou deux services. L'ordre suit `chapters` dans les dictionnaires. */
+export const CHAPTERS: { id: string; services: ServiceId[] }[] = [
+  { id: 'arrivee', services: ['van'] },
+  { id: 'route', services: ['voitures', 'chauffeur'] },
+  { id: 'adresse', services: ['sejours', 'immobilier'] },
+  { id: 'table', services: ['tables', 'evenements'] },
+  { id: 'soi', services: ['shopping', 'esthetique'] },
+  { id: 'reste', services: ['conciergerie'] },
+];
 
 export const FLEET = [
   { key: 'c1', img: 'img/fleet-m5.jpg' },

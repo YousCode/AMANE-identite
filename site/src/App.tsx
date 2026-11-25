@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { SERVICES, dict, numerals, type Lang } from './i18n';
+import { CHAPTERS, SERVICES, dict, numerals, type Lang } from './i18n';
 import { CABINETS } from './config';
 import { finePointer, reducedMotion, smooth } from './ui';
 import { Sprite } from './brand';
 import { Nav } from './components/Nav';
-import { Hero } from './components/Hero';
+import { Epilogue, Hero } from './components/Hero';
 import { Rideau } from './components/Rideau';
-import { Film, Flotte, Footer, Jeu, Maison, Questions, Rituel, ServicesIndex } from './components/Sections';
+import { Chapitre, Film, Flotte, Footer, Jeu, Maison, Questions, Rituel, ServicesIndex } from './components/Sections';
 import { RequestForm } from './components/RequestForm';
 
 export function App({ lang }: { lang: Lang }) {
@@ -57,26 +57,48 @@ export function App({ lang }: { lang: Lang }) {
         <Hero d={d} />
         <Maison d={d} lang={lang} />
         <ServicesIndex d={d} lang={lang} />
-        {SERVICES.map((s, i) => (
-          <Film
-            key={s.id}
-            id={s.id}
-            name={s.film}
-            portrait={s.portrait}
-            kicker={d[s.key][2]}
-            title={d[s.key][0]}
-            line={d[s.key][1]}
-            cta={d.ask}
-            onAsk={() => setService(i)}
-            rank={[num[i], num[SERVICES.length - 1]]}
-            note={s.id === 'esthetique' ? cabinets : undefined}
-          />
+        {CHAPTERS.map((c, ci) => (
+          <Chapitre key={c.id} d={d} lang={lang} index={ci}>
+            {c.services.map((id) => {
+              const i = SERVICES.findIndex((s) => s.id === id);
+              const s = SERVICES[i];
+              return (
+                <Film
+                  key={s.id}
+                  id={s.id}
+                  name={s.film}
+                  portrait={s.portrait}
+                  kicker={d[s.key][2]}
+                  title={d[s.key][0]}
+                  line={d[s.key][1]}
+                  cta={d.ask}
+                  onAsk={() => setService(i)}
+                  rank={num[ci]}
+                  flip={i % 2 === 1}
+                  note={s.id === 'esthetique' ? cabinets : undefined}
+                />
+              );
+            })}
+            {/* L'accueil à l'aéroport clôt le premier chapitre : ce n'est pas un service à part, c'est la promesse. */}
+            {ci === 0 && (
+              <Film
+                id="monde"
+                name="arrivee"
+                kicker={d.intl}
+                title={d.it}
+                line={d.ip}
+                cta={d.cta}
+                rank={num[ci]}
+                flip
+              />
+            )}
+          </Chapitre>
         ))}
-        <Film id="monde" name="arrivee" kicker={d.intl} title={d.it} line={d.ip} cta={d.cta} />
         <Rituel d={d} lang={lang} />
         <Flotte d={d} />
         <Jeu d={d} />
         <Questions d={d} />
+        <Epilogue d={d} />
         <RequestForm d={d} lang={lang} service={service} onService={setService} />
       </main>
       <Footer d={d} />

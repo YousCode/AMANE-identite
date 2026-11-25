@@ -9,11 +9,13 @@ export function Title({
   html,
   id,
   className = '',
+  lang,
 }: {
-  as?: 'h1' | 'h2' | 'h3';
+  as?: 'h1' | 'h2' | 'h3' | 'p';
   html: string;
   id?: string;
   className?: string;
+  lang?: string;
 }) {
   let i = 0;
   const words = (text: string, key: string): ReactNode[] =>
@@ -34,12 +36,23 @@ export function Title({
   const parts = html.split(/(<em>.*?<\/em>)/).filter(Boolean);
   return createElement(
     as,
-    { id, className: `split rv ${className}`.trim() },
+    { id, lang, className: `split rv ${className}`.trim() },
     parts.map((part, k) => {
       const m = /^<em>(.*)<\/em>$/.exec(part);
       return m ? <em key={k}>{words(m[1], 'e' + k)}</em> : words(part, 'p' + k);
     }),
   );
+}
+
+/** Texte du dictionnaire avec emphase <em>…</em>, rendu sans découpage. */
+export function Rich({ html }: { html: string }) {
+  return html
+    .split(/(<em>.*?<\/em>)/)
+    .filter(Boolean)
+    .map((part, k) => {
+      const m = /^<em>(.*)<\/em>$/.exec(part);
+      return m ? <em key={k}>{m[1]}</em> : part;
+    });
 }
 
 type FrameFn = () => void;
