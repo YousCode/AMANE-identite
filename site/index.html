@@ -6,7 +6,13 @@
     <meta name="theme-color" content="#3B0C15" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <script>
-      document.documentElement.classList.add('js');
+      (function (h) {
+        h.classList.add('js');
+        // Si le script principal n'est pas arrivé au bout de 7 s, la page s'affiche sans animation.
+        setTimeout(function () {
+          if (!h.classList.contains('pret')) h.classList.remove('js');
+        }, 7000);
+      })(document.documentElement);
     </script>
     <!--head-->
   </head>

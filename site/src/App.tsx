@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { LANG_META, SERVICES, dict, type Lang } from './i18n';
-import { MarkA } from './brand';
 import { finePointer, reducedMotion, useScrollFrame } from './ui';
 import { Nav, type Tone } from './components/Nav';
 import { Hero } from './components/Hero';
+import { Rideau } from './components/Rideau';
 import { Film, Flotte, Footer, Maison, Questions, Rituel, ServicesIndex } from './components/Sections';
 import { RequestForm } from './components/RequestForm';
 
@@ -65,9 +65,7 @@ export function App({ lang }: { lang: Lang }) {
 
   return (
     <>
-      <div className="rideau" aria-hidden="true">
-        <MarkA />
-      </div>
+      <Rideau />
       <a className="skip" href="#maison">
         {d.skip}
       </a>

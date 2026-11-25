@@ -25,6 +25,25 @@ function Raw({ svg, className, label }: { svg: string; className?: string; label
   );
 }
 
+/**
+ * Monogramme (logos/svg/amane-monogramme-*.svg), pièce par pièce pour l'animation de chargement :
+ * les deux arcs se tracent, le sol s'étire, le A monte, le losange s'allume.
+ */
+export function MonogrammeTrace() {
+  return (
+    <svg viewBox="-70 -10 1140 1310" aria-hidden="true" focusable="false">
+      <path className="trace" pathLength={1} strokeWidth={22} d="M11 1260 V500 A489 489 0 0 1 989 500 V1260" />
+      <path className="trace fin" pathLength={1} strokeWidth={7} d="M45 1260 V500 A455 455 0 0 1 955 500 V1260" />
+      <path className="pt" fill="currentColor" d="M500 51 l26 34 l-26 34 l-26 -34 Z" />
+      <rect className="sol" fill="currentColor" x={-60} y={1256} width={1120} height={14} />
+      <rect className="sol" fill="currentColor" x={-30} y={1282} width={1060} height={5} />
+      <g transform="translate(119.64 492) scale(0.74)">
+        <path className="lettre" fill="currentColor" d={A_PATH} />
+      </g>
+    </svg>
+  );
+}
+
 /** Logotype vectorisé : jamais retapé au clavier (voir README de l'identité). */
 export const Logotype = ({ className }: { className?: string }) => (
   <Raw svg={logotypeSvg} className={className} label="Amane — Conciergerie, Paris" />

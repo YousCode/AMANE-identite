@@ -23,7 +23,7 @@ const page = `<title>Amane</title>
 <meta name="theme-color" content="#3B0C15">
 <style>${css}
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
-<script>document.documentElement.classList.add('js')</script>
+<script>(function(h){h.classList.add('js');setTimeout(function(){if(!h.classList.contains('pret'))h.classList.remove('js')},7000)})(document.documentElement)</script>
 <div id="root"></div>
 <script type="module">${js}</script>
 `;
