@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react';
+import { useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from 'react';
 import type { ReactNode } from 'react';
 import { CARDS, CHAPTERS, FLEET, SERVICES, SLOGAN, numerals, type Dict, type Lang } from '../i18n';
 import { Logotype, Sceau } from '../brand';
@@ -52,10 +52,22 @@ export function Maison({ d, lang }: Props) {
   );
 }
 
-/** Le sommaire : six chapitres, et sous chaque titre les services qu'il raconte. */
+/**
+ * Le sommaire : les chapitres, et sous chaque titre les services qu'il raconte.
+ * À la souris, l'image du chapitre survolé apparaît dans une arche qui suit le pointeur.
+ */
 export function ServicesIndex({ d, lang }: Props) {
   const num = numerals(lang);
   const name = (id: string) => d[SERVICES.find((s) => s.id === id)!.key][0];
+  const film = (id: string) => SERVICES.find((s) => s.id === id)!.film;
+  const [shown, setShown] = useState(-1);
+  const list = useRef<HTMLDivElement>(null);
+  const preview = useRef<HTMLDivElement>(null);
+  const move = (e: ReactMouseEvent) => {
+    const box = list.current?.getBoundingClientRect();
+    if (!box || !preview.current) return;
+    preview.current.style.transform = `translate3d(${e.clientX - box.left}px, ${e.clientY - box.top}px, 0)`;
+  };
   return (
     <section className="sec tight" id="services" data-tone="page" aria-labelledby="st">
       <div className="wrap">
@@ -64,17 +76,33 @@ export function ServicesIndex({ d, lang }: Props) {
           <Title id="st" html={d.st} />
           <p className="lead rv">{d.sn}</p>
         </div>
-        <ol className="index">
-          {CHAPTERS.map((c, i) => (
-            <li className="rv" key={c.id}>
-              <a href={`#chapitre-${c.id}`}>
-                <b aria-hidden="true">{num[i]}</b>
-                <strong>{d.chapters[i][0]}</strong>
-                <span>{c.services.map(name).join(' · ')}</span>
-              </a>
-            </li>
-          ))}
-        </ol>
+        <div className="index__cadre" ref={list} onMouseMove={move} onMouseLeave={() => setShown(-1)}>
+          <ol className="index">
+            {CHAPTERS.map((c, i) => (
+              <li className="rv" key={c.id} onMouseEnter={() => setShown(i)}>
+                <a href={`#chapitre-${c.id}`}>
+                  <b aria-hidden="true">{num[i]}</b>
+                  <strong>{d.chapters[i][0]}</strong>
+                  <span>{c.services.map(name).join(' · ')}</span>
+                </a>
+              </li>
+            ))}
+          </ol>
+          <div className={`apercu${shown >= 0 ? ' on' : ''}`} ref={preview} aria-hidden="true">
+            <div className="apercu__arche">
+              {CHAPTERS.map((c, i) => (
+                <img
+                  key={c.id}
+                  className={i === shown ? 'on' : undefined}
+                  src={asset(`img/${film(c.services[0])}-poster.jpg`)}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                />
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -88,6 +116,9 @@ export function Chapitre({ d, lang, index, children }: Props & { index: number; 
     <>
       <section className="chapitre scene" id={id} data-tone="page" aria-labelledby={`${id}-t`}>
         <div className="scene__pin">
+          <span className="chapitre__num" aria-hidden="true">
+            {numerals(lang)[index]}
+          </span>
           <div className="wrap">
             <p className="k rv">
               {d.chap} {numerals(lang)[index]}

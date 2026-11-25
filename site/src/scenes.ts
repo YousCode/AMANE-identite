@@ -3,7 +3,9 @@ import { reducedMotion, useScrollFrame } from './ui';
 
 const clamp = (x: number, min = 0, max = 1) => Math.min(max, Math.max(min, x));
 
-type Item = { el: HTMLElement; scene: boolean; last: string };
+type Item = { el: HTMLElement; scene: boolean; last: string; open: boolean };
+
+const OPEN_AT = 0.72;
 
 /**
  * Le défilement mis en scène. À chaque image, trois valeurs sont écrites en variables CSS ;
@@ -13,6 +15,9 @@ type Item = { el: HTMLElement; scene: boolean; last: string };
  *                --leave  0 (épinglée) → 1 (entièrement recouverte par la scène suivante)
  *  [data-drift]  --drift  −1 (entre par le bas) → 0 (au centre) → 1 (sort par le haut)
  *  <html>        --page   avancement dans la page, de 0 à 1
+ *
+ * Une scène reçoit la classe « ouvert » quand sa porte est presque grande ouverte (--enter ≥ 0,72) :
+ * c'est le signal qui dévoile son texte, mot à mot. Elle la garde ensuite.
  *
  * Les mesures sont toutes lues avant la première écriture, pour ne pas forcer de recalcul de mise en page.
  */
@@ -25,7 +30,10 @@ export function useScenes() {
       el,
       scene: el.classList.contains('scene'),
       last: '',
+      open: false,
     }));
+    // Sans animation, tout est ouvert d'emblée.
+    if (reducedMotion()) items.current.forEach((it) => it.scene && it.el.classList.add('ouvert'));
   }, []);
 
   useScrollFrame(() => {
@@ -50,6 +58,10 @@ export function useScenes() {
         const [enter, leave] = value.split(' ');
         it.el.style.setProperty('--enter', enter);
         it.el.style.setProperty('--leave', leave);
+        if (!it.open && Number(enter) >= OPEN_AT) {
+          it.open = true;
+          it.el.classList.add('ouvert');
+        }
       } else {
         it.el.style.setProperty('--drift', value);
       }

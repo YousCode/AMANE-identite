@@ -126,6 +126,10 @@ type Extra = {
   chapters: [Pair, Pair, Pair, Pair, Pair, Pair, Pair];
   epK: string;
   epT: string;
+  /** Fil du récit (colonne de droite) et invitation à défiler */
+  prologue: string;
+  recit: string;
+  scroll: string;
   /** Jeu de cartes */
   jk: string;
   jt: string;
@@ -209,6 +213,9 @@ const extra: Record<Lang, Extra> = {
     ],
     epK: 'Épilogue',
     epT: 'La porte se referme. <em>L’histoire, elle, vous suit.</em>',
+    prologue: 'Prologue',
+    recit: 'Le récit',
+    scroll: 'Défiler',
     jk: 'Le jeu Amane',
     jt: 'Quatre figures, <em>une seule maison.</em>',
     jp: 'Cinquante-quatre cartes dessinées pour Amane. Le Voiturier, la Parisienne, le Gentleman et le Majordome y tiennent les rôles du valet, de la dame, du roi et du joker.',
@@ -281,6 +288,9 @@ const extra: Record<Lang, Extra> = {
     ],
     epK: 'Epilogue',
     epT: 'The door closes. <em>The story stays with you.</em>',
+    prologue: 'Prologue',
+    recit: 'The story',
+    scroll: 'Scroll',
     jk: 'The Amane deck',
     jt: 'Four figures, <em>one house.</em>',
     jp: 'Fifty-four cards drawn for Amane. Le Voiturier, la Parisienne, le Gentleman and le Majordome play the jack, the queen, the king and the joker.',
@@ -356,6 +366,9 @@ const extra: Record<Lang, Extra> = {
     ],
     epK: 'Epílogo',
     epT: 'La puerta se cierra. <em>La historia le acompaña.</em>',
+    prologue: 'Prólogo',
+    recit: 'La historia',
+    scroll: 'Desliza',
     jk: 'La baraja Amane',
     jt: 'Cuatro figuras, <em>una sola casa.</em>',
     jp: 'Cincuenta y cuatro cartas dibujadas para Amane. Le Voiturier, la Parisienne, le Gentleman y le Majordome hacen de jota, dama, rey y comodín.',
@@ -424,6 +437,9 @@ const extra: Record<Lang, Extra> = {
     ],
     epK: 'الخاتمة',
     epT: 'يُغلق الباب. <em>والقصة ترافقك.</em>',
+    prologue: 'المقدّمة',
+    recit: 'القصة',
+    scroll: 'مرّر',
     jk: 'ورق لعب Amane',
     jt: 'أربع شخصيات، <em>ودار واحدة.</em>',
     jp: 'أربع وخمسون ورقة رُسمت خصيصاً لـAmane. يؤدّي فيها Le Voiturier وLa Parisienne وLe Gentleman وLe Majordome أدوار الولد والملكة والملك والجوكر.',

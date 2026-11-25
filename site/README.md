@@ -89,7 +89,14 @@ La devise de la maison, « Arrive as a Guest. Leave with a Story. », structure 
 
 ## Le défilement
 
-`src/scenes.ts` écrit à chaque image quatre variables CSS (`--enter`, `--leave`, `--drift`, `--page`) ; tout le mouvement est décrit dans `src/styles.css`. Les films et les ouvertures de chapitre sont des « scènes » : chacune reste épinglée pendant que la suivante glisse par-dessus. Avec le réglage système « réduire les animations », la page redevient un défilement simple.
+`src/scenes.ts` écrit à chaque image quatre variables CSS (`--enter`, `--leave`, `--drift`, `--page`) ; tout le mouvement est décrit dans `src/styles.css`.
+
+- **La porte.** Les films et les ouvertures de chapitre sont des « scènes ». Chacune entre en arche de porte cochère, qui s'élargit jusqu'au plein cadre pendant que la scène précédente reste épinglée, recule et s'assombrit.
+- **Le texte attend la porte.** Une scène reçoit la classe `ouvert` quand son arche est presque grande ouverte : son titre se dévoile alors mot à mot, puis la phrase et le lien.
+- **Le fil du récit** (`src/components/Fil.tsx`, grand écran) : Prologue, chapitres I à VII, Épilogue, cliquables, avec le chapitre en cours en or.
+- **Le sommaire** montre, au survol, l'image du chapitre dans une arche qui suit la souris.
+
+Avec le réglage système « réduire les animations », la page redevient un défilement simple, tout le texte visible.
 
 ## Les services
 

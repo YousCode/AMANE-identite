@@ -131,6 +131,9 @@ export function Hero({ d }: { d: Dict }) {
             {d.cta}
           </a>
         </div>
+        <p className="defiler" aria-hidden="true">
+          {d.scroll}
+        </p>
         <span className="hint" aria-hidden="true" />
         <span className="seuil" aria-hidden="true" />
       </div>

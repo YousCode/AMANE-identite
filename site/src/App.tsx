@@ -5,6 +5,7 @@ import { finePointer, reducedMotion, smooth } from './ui';
 import { useScenes } from './scenes';
 import { Sprite } from './brand';
 import { Nav } from './components/Nav';
+import { Fil } from './components/Fil';
 import { Epilogue, Hero } from './components/Hero';
 import { Rideau } from './components/Rideau';
 import { Chapitre, Film, Flotte, Footer, Jeu, Maison, Questions, Rituel, ServicesIndex } from './components/Sections';
@@ -56,6 +57,7 @@ export function App({ lang }: { lang: Lang }) {
         {d.skip}
       </a>
       <Nav d={d} lang={lang} />
+      <Fil d={d} lang={lang} />
       <main>
         <Hero d={d} />
         <Maison d={d} lang={lang} />
@@ -82,6 +84,8 @@ export function App({ lang }: { lang: Lang }) {
                 />
               );
             })}
+            {/* La flotte clôt le chapitre de la route. */}
+            {c.id === 'route' && <Flotte d={d} />}
             {/* L'accueil à l'aéroport clôt le premier chapitre : ce n'est pas un service à part, c'est la promesse. */}
             {ci === 0 && (
               <Film
@@ -97,10 +101,10 @@ export function App({ lang }: { lang: Lang }) {
             )}
           </Chapitre>
         ))}
+        {/* Après les chapitres : comment l'histoire s'écrit, les questions, le souvenir, puis la porte se referme. */}
         <Rituel d={d} lang={lang} />
-        <Flotte d={d} />
-        <Jeu d={d} />
         <Questions d={d} />
+        <Jeu d={d} />
         <Epilogue d={d} />
         <RequestForm d={d} lang={lang} service={service} onService={setService} />
       </main>
