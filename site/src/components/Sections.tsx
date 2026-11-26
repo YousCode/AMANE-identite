@@ -111,11 +111,16 @@ export function ServicesIndex({ d, lang }: Props) {
 /** L'ouverture d'un chapitre : son numéro, son titre, une phrase. Les films du chapitre suivent. */
 export function Chapitre({ d, lang, index, children }: Props & { index: number; children: ReactNode }) {
   const [title, text] = d.chapters[index];
-  const id = `chapitre-${CHAPTERS[index].id}`;
+  const c = CHAPTERS[index];
+  const id = `chapitre-${c.id}`;
+  // L'affiche du premier film du chapitre : la dernière image du passage, et l'image de repli.
+  const film = SERVICES.find((s) => s.id === c.services[0])!.film;
   return (
     <>
-      <section className="chapitre scene" id={id} data-tone="page" aria-labelledby={`${id}-t`}>
-        <div className="scene__pin">
+      <section className="chapitre scene" id={id} data-tone="dark" aria-labelledby={`${id}-t`}>
+        <div className="scene__pin" data-poster={`img/${film}-poster.jpg`}>
+          <canvas className="passage" data-passage={c.passage} data-mode="chapitre" aria-hidden="true" />
+          <span className="voile" aria-hidden="true" />
           <span className="chapitre__num" aria-hidden="true">
             {numerals(lang)[index]}
           </span>
@@ -148,14 +153,24 @@ type FilmProps = {
   flip?: boolean;
   /** Mention sous le texte (liste des cabinets partenaires). */
   note?: string;
+  /** Plan de caméra qui amène à ce film depuis le précédent (voir src/passages.ts). */
+  passage?: string;
 };
 
 /** Film plein cadre. Le logotype reste dans l'angle de chaque film, quel que soit le recadrage. */
-export function Film({ id, name, portrait, kicker, title, line, cta, onAsk, rank, flip, note }: FilmProps) {
+export function Film({ id, name, portrait, kicker, title, line, cta, onAsk, rank, flip, note, passage }: FilmProps) {
   return (
-    <section className={`film scene${flip ? ' flip' : ''}`} id={id} data-tone="dark" aria-labelledby={`${id}-t`}>
+    <section
+      className={`film scene${flip ? ' flip' : ''}`}
+      id={id}
+      data-tone="dark"
+      data-passage={passage || undefined}
+      aria-labelledby={`${id}-t`}
+    >
       <div className="scene__pin">
         <Loop name={name} portrait={portrait} />
+        {passage && <canvas className="passage" data-passage={passage} data-mode="entree" aria-hidden="true" />}
+        <span className="grain" aria-hidden="true" />
         <div className="cap">
           <p className="k rv">{kicker}</p>
           <Title as="h3" id={`${id}-t`} html={title} />

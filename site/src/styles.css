@@ -2084,19 +2084,41 @@ html[dir='rtl'] .f__label {
 /* ───── Le récit : ouverture de chapitre ───── */
 .chapitre {
   text-align: center;
+  color: var(--pierre);
 }
 .chapitre .scene__pin {
   display: grid;
   place-items: center;
   padding: var(--navh) var(--gr) 0 var(--gl);
-  background: var(--pierre);
+  background-color: var(--noir);
+  background-position: center;
+  background-size: cover;
+}
+/* Un voile au centre, pour lire le titre sur l'image en mouvement */
+.chapitre .voile {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 75% 65% at 50% 52%,
+    rgba(var(--noir-rgb), 0.6) 0%,
+    rgba(var(--noir-rgb), 0.38) 60%,
+    rgba(var(--noir-rgb), 0.22) 100%
+  );
 }
 .chapitre .k {
   display: inline-flex;
   flex-direction: column;
   align-items: center;
   gap: 24px;
-  color: var(--bx);
+  color: var(--pierre);
+}
+.chapitre h2 {
+  color: var(--pierre);
+  text-shadow: 0 2px 30px rgba(var(--noir-rgb), 0.35);
+}
+.chapitre .lead {
+  color: rgba(var(--pierre-rgb), 0.88);
 }
 .chapitre .k::before {
   content: '';
@@ -2312,12 +2334,64 @@ html[dir='rtl'] .nav::after {
   }
 }
 
-/* ───── La porte : chaque scène entre en arche de porte cochère, puis s'élargit au plein cadre ─────
-   --o vaut 1 quand la scène arrive par le bas, 0 quand elle est en place. L'arche est un plein cintre :
-   rayon = demi-largeur de l'ouverture. Ce qui est autour reste la scène précédente, toujours épinglée. */
-.scene .scene__pin {
-  --o: calc(1 - var(--enter, 1));
-  clip-path: inset(0 calc(var(--o) * 14%) 0 calc(var(--o) * 14%) round calc(var(--o) * 36vw) calc(var(--o) * 36vw) 0 0);
+/* ───── Passages : d'un film à l'autre, sans coupe ─────
+   Une scène qui en suit une autre ne monte pas : elle apparaît sur place, par-dessus la précédente,
+   pendant que son passage (src/passages.ts), un plan de caméra joué au défilement, l'y amène.
+   Le passage commence sur la dernière image de la scène précédente : le relais est un fondu très bref.
+   Un film qui suit une ouverture de chapitre se fond plus lentement, sur la dernière image du passage,
+   qui est déjà la sienne. */
+.scene + .scene .scene__pin {
+  transform: translate3d(0, calc((1 - var(--enter, 1)) * -100%), 0);
+  opacity: var(--e, 1);
+}
+.js .scene + .scene:not(.ouvert) .scene__pin {
+  pointer-events: none;
+}
+.scene + .chapitre .scene__pin,
+.scene + .film[data-passage] .scene__pin {
+  opacity: min(1, calc(var(--enter, 1) * 4));
+}
+.passage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+/* Dans un film, le passage s'efface à l'arrivée : la vidéo, dessous, prend le relais. */
+.film .passage {
+  opacity: calc(1 - max(0, (var(--enter, 1) - 0.9) * 10));
+}
+
+/* Grain de film, léger, sur toutes les images animées */
+.grain {
+  position: absolute;
+  inset: -50%;
+  z-index: 1;
+  pointer-events: none;
+  background: url(/img/grain.png);
+  opacity: 0.06;
+  animation: grain 0.9s steps(5) infinite;
+}
+@keyframes grain {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  20% {
+    transform: translate3d(-6%, 4%, 0);
+  }
+  40% {
+    transform: translate3d(5%, -7%, 0);
+  }
+  60% {
+    transform: translate3d(-3%, 8%, 0);
+  }
+  80% {
+    transform: translate3d(7%, 2%, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
 }
 
 /* Le texte d'une scène attend que la porte soit ouverte, puis se dévoile mot à mot. */
@@ -2350,7 +2424,7 @@ html[dir='rtl'] .nav::after {
   font-family: var(--display);
   font-size: min(64vw, 78vh);
   line-height: 1;
-  color: rgba(var(--bx-rgb), 0.045);
+  color: rgba(var(--pierre-rgb), 0.07);
   pointer-events: none;
   user-select: none;
   transform: translate3d(0, calc((1 - var(--enter, 1)) * 14vh - var(--leave, 0) * 18vh), 0);
@@ -2534,7 +2608,14 @@ html[dir='rtl'] .hero .defiler {
 }
 @media (prefers-reduced-motion: reduce) {
   .scene .scene__pin {
-    clip-path: none;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .passage {
+    display: none;
+  }
+  .grain {
+    animation: none;
   }
   .chapitre__num {
     transform: none;
