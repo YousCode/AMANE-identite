@@ -134,7 +134,21 @@ type Extra = {
   jk: string;
   jt: string;
   jp: string;
-  jRoles: [string, string, string, string];
+  /** Rôles des quatre figures, puis noms des deux as. */
+  jRoles: [string, string, string, string, string, string];
+  jShuffle: string;
+  jHint: string;
+  /** Réalisations (partie Création & marketing) */
+  wk: string;
+  wt: string;
+  wp: string;
+  /** Filtres : tout, films, visuels, sites */
+  wFilters: [string, string, string, string];
+  /** Nature d'une réalisation : film, visuel, site */
+  wKinds: [string, string, string];
+  wVisit: string;
+  wClose: string;
+  wFor: string;
 };
 
 export type Dict = Base & Extra;
@@ -219,7 +233,17 @@ const extra: Record<Lang, Extra> = {
     jk: 'Le jeu Amane',
     jt: 'Quatre figures, <em>une seule maison.</em>',
     jp: 'Cinquante-quatre cartes dessinées pour Amane. Le Voiturier, la Parisienne, le Gentleman et le Majordome y tiennent les rôles du valet, de la dame, du roi et du joker.',
-    jRoles: ['Valet', 'Dame', 'Roi', 'Joker'],
+    jRoles: ['Valet', 'Dame', 'Roi', 'Joker', 'As de cœur', 'As de pique'],
+    jShuffle: 'Battre les cartes',
+    jHint: 'Choisissez une carte',
+    wk: 'Réalisations',
+    wt: 'Ce que nous <em>signons.</em>',
+    wp: 'Films, visuels et sites : voici ce que la maison a créé pour elle-même. Les prochains seront les vôtres.',
+    wFilters: ['Tout', 'Films', 'Visuels', 'Sites'],
+    wKinds: ['Film', 'Visuel', 'Site'],
+    wVisit: 'Voir le site',
+    wClose: 'Fermer',
+    wFor: 'Pour',
   },
   en: {
     metaTitle: 'Amane — Private Concierge in Paris | Luxury Cars & Chauffeurs',
@@ -294,7 +318,17 @@ const extra: Record<Lang, Extra> = {
     jk: 'The Amane deck',
     jt: 'Four figures, <em>one house.</em>',
     jp: 'Fifty-four cards drawn for Amane. Le Voiturier, la Parisienne, le Gentleman and le Majordome play the jack, the queen, the king and the joker.',
-    jRoles: ['Jack', 'Queen', 'King', 'Joker'],
+    jRoles: ['Jack', 'Queen', 'King', 'Joker', 'Ace of hearts', 'Ace of spades'],
+    jShuffle: 'Shuffle the deck',
+    jHint: 'Pick a card',
+    wk: 'Our work',
+    wt: 'What we <em>sign.</em>',
+    wp: 'Films, visuals and websites: this is what the house has made for itself. The next ones will be yours.',
+    wFilters: ['All', 'Films', 'Visuals', 'Websites'],
+    wKinds: ['Film', 'Visual', 'Website'],
+    wVisit: 'Visit the site',
+    wClose: 'Close',
+    wFor: 'For',
   },
   es: {
     metaTitle: 'Amane — Concierge privado en París | Coches y chóferes',
@@ -372,7 +406,17 @@ const extra: Record<Lang, Extra> = {
     jk: 'La baraja Amane',
     jt: 'Cuatro figuras, <em>una sola casa.</em>',
     jp: 'Cincuenta y cuatro cartas dibujadas para Amane. Le Voiturier, la Parisienne, le Gentleman y le Majordome hacen de jota, dama, rey y comodín.',
-    jRoles: ['Jota', 'Dama', 'Rey', 'Comodín'],
+    jRoles: ['Jota', 'Dama', 'Rey', 'Comodín', 'As de corazones', 'As de picas'],
+    jShuffle: 'Barajar',
+    jHint: 'Elija una carta',
+    wk: 'Trabajos',
+    wt: 'Lo que <em>firmamos.</em>',
+    wp: 'Películas, visuales y sitios web: esto es lo que la casa ha creado para sí misma. Los próximos serán los suyos.',
+    wFilters: ['Todo', 'Películas', 'Visuales', 'Sitios'],
+    wKinds: ['Película', 'Visual', 'Sitio web'],
+    wVisit: 'Ver el sitio',
+    wClose: 'Cerrar',
+    wFor: 'Para',
   },
   ar: {
     metaTitle: 'Amane — كونسيرج خاص في باريس | سيارات فاخرة وسائقون',
@@ -443,7 +487,17 @@ const extra: Record<Lang, Extra> = {
     jk: 'ورق لعب Amane',
     jt: 'أربع شخصيات، <em>ودار واحدة.</em>',
     jp: 'أربع وخمسون ورقة رُسمت خصيصاً لـAmane. يؤدّي فيها Le Voiturier وLa Parisienne وLe Gentleman وLe Majordome أدوار الولد والملكة والملك والجوكر.',
-    jRoles: ['الولد', 'الملكة', 'الملك', 'الجوكر'],
+    jRoles: ['الولد', 'الملكة', 'الملك', 'الجوكر', 'آس القلب', 'آس البستوني'],
+    jShuffle: 'اخلط الأوراق',
+    jHint: 'اختر ورقة',
+    wk: 'أعمالنا',
+    wt: 'ما <em>نوقّعه.</em>',
+    wp: 'أفلام وصور ومواقع: هذا ما صنعته الدار لنفسها. والقادمة ستكون لكم.',
+    wFilters: ['الكل', 'أفلام', 'صور', 'مواقع'],
+    wKinds: ['فيلم', 'صورة', 'موقع'],
+    wVisit: 'زيارة الموقع',
+    wClose: 'إغلاق',
+    wFor: 'لصالح',
   },
 };
 
@@ -530,11 +584,17 @@ export const FLEET = [
 export const REQUEST_IDS = [...SERVICES.map((s) => s.id), 'autre'] as const;
 
 /** Figures du jeu de cartes : nom imprimé sur la carte (jamais traduit) et image. */
+/**
+ * Les cartes posées sur le tapis : les quatre figures, encadrées par les deux as.
+ * `label` renvoie à `jRoles` : le rôle d'une figure (valet, dame, roi, joker) ou le nom d'un as.
+ */
 export const CARDS = [
-  { name: 'Le Voiturier', img: 'cartes/voiturier.webp' },
-  { name: 'La Parisienne', img: 'cartes/parisienne.webp' },
-  { name: 'Le Gentleman', img: 'cartes/gentleman.webp' },
-  { name: 'Le Majordome', img: 'cartes/majordome.webp' },
+  { id: 'as-coeur', name: '', img: 'cartes/as-coeur.webp', label: 4 },
+  { id: 'voiturier', name: 'Le Voiturier', img: 'cartes/voiturier.webp', label: 0 },
+  { id: 'parisienne', name: 'La Parisienne', img: 'cartes/parisienne.webp', label: 1 },
+  { id: 'gentleman', name: 'Le Gentleman', img: 'cartes/gentleman.webp', label: 2 },
+  { id: 'majordome', name: 'Le Majordome', img: 'cartes/majordome.webp', label: 3 },
+  { id: 'as-pique', name: '', img: 'cartes/as-pique.webp', label: 5 },
 ] as const;
 
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];

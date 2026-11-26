@@ -1,6 +1,6 @@
-import { useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from 'react';
+import { useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import type { ReactNode } from 'react';
-import { CARDS, CHAPTERS, FLEET, SERVICES, SLOGAN, numerals, type Dict, type Lang } from '../i18n';
+import { CHAPTERS, FLEET, SERVICES, SLOGAN, numerals, type Dict, type Lang } from '../i18n';
 import { Logotype, Sceau } from '../brand';
 import { asset } from '../config';
 import { Rich, Title } from '../ui';
@@ -261,55 +261,6 @@ export function Flotte({ d }: { d: Dict }) {
  * Le jeu de cartes de la maison. À l'arrivée dans l'écran, les cartes sortent du paquet face cachée,
  * s'ouvrent en éventail puis se retournent une à une. Au survol une carte se lève ; un clic la retourne.
  */
-export function Jeu({ d }: { d: Dict }) {
-  const [shown, setShown] = useState(0);
-  const [flipped, setFlipped] = useState<number[]>([]);
-  const toggle = (i: number) => setFlipped((f) => (f.includes(i) ? f.filter((x) => x !== i) : [...f, i]));
-  return (
-    <section className="jeu" id="jeu" data-tone="bx" aria-labelledby="jt">
-      <div className="wrap two">
-        <div>
-          <p className="k eb rv">{d.jk}</p>
-          <Title id="jt" html={d.jt} />
-          <p className="lead rv">{d.jp}</p>
-        </div>
-        <div className="jeu__table">
-          <ul className="eventail rv" style={{ '--n': CARDS.length } as CSSProperties}>
-            {CARDS.map((c, i) => (
-              <li key={c.name} style={{ '--k': i } as CSSProperties}>
-                <button
-                  type="button"
-                  className={flipped.includes(i) ? 'dos' : undefined}
-                  aria-label={`${c.name} — ${d.jRoles[i]}`}
-                  aria-pressed={flipped.includes(i)}
-                  onClick={() => toggle(i)}
-                  onMouseEnter={() => setShown(i)}
-                  onFocus={() => setShown(i)}
-                >
-                  <img src={asset(c.img)} alt="" width={720} height={1008} loading="lazy" decoding="async" />
-                  <img
-                    className="verso"
-                    src={asset('cartes/dos.webp')}
-                    alt=""
-                    width={720}
-                    height={1008}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </button>
-              </li>
-            ))}
-          </ul>
-          <p className="jeu__nom rv" aria-live="polite">
-            <b lang="fr">{CARDS[shown].name}</b>
-            <span>{d.jRoles[shown]}</span>
-          </p>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 export function Questions({ d }: { d: Dict }) {
   return (
     <section className="sec" id="questions" data-tone="page" aria-labelledby="qt">

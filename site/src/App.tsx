@@ -9,7 +9,9 @@ import { Nav } from './components/Nav';
 import { Fil } from './components/Fil';
 import { Epilogue, Hero } from './components/Hero';
 import { Rideau } from './components/Rideau';
-import { Chapitre, Film, Flotte, Footer, Jeu, Maison, Questions, Rituel, ServicesIndex } from './components/Sections';
+import { Jeu } from './components/Jeu';
+import { Realisations } from './components/Realisations';
+import { Chapitre, Film, Flotte, Footer, Maison, Questions, Rituel, ServicesIndex } from './components/Sections';
 import { RequestForm } from './components/RequestForm';
 
 export function App({ lang }: { lang: Lang }) {
@@ -89,6 +91,8 @@ export function App({ lang }: { lang: Lang }) {
             })}
             {/* La flotte clôt le chapitre de la route. */}
             {c.id === 'route' && <Flotte d={d} />}
+            {/* Ce que la maison a créé : films, visuels et sites, à la suite du film « Création & marketing ». */}
+            {c.id === 'image' && <Realisations d={d} />}
             {/* L'accueil à l'aéroport clôt le premier chapitre : ce n'est pas un service à part, c'est la promesse. */}
             {ci === 0 && (
               <Film

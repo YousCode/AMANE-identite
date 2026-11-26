@@ -30,6 +30,7 @@ npm run format     # met en forme tout le code (Prettier)
 | `public/passages/`, `scripts/passages.sh`             | Les passages : plans de caméra entre deux films, en images fixes jouées au défilement (un fichier par passage)                                                                                                                                                               |
 | `public/frames/`                                      | Les 48 images de la porte qui s'ouvre au défilement                                                                                                                                                                                                                          |
 | `public/video/`, `public/img/`                        | Films des services en 1080p (MP4 + WebM), affiches, photos de la flotte, motif Arcades                                                                                                                                                                                       |
+| `src/realisations.ts`, `public/realisations/`         | Réalisations montrées dans la partie Création & marketing : la liste, et leurs images                                                                                                                                                                                        |
 | `public/cartes/`                                      | Figures du jeu de cartes Amane, rendues depuis le générateur du jeu                                                                                                                                                                                                          |
 | `scripts/encoder-films.sh`                            | Ré-encode les originaux Higgsfield pour le web                                                                                                                                                                                                                               |
 | `src/brand/`                                          | Logos copiés depuis `../logos/svg/` (couleur pilotée par le CSS)                                                                                                                                                                                                             |
@@ -110,6 +111,29 @@ La liste est dans `src/i18n.ts` (`SERVICES`) et, côté serveur, dans `api/_lib/
 Van VIP · Voitures d'exception · Chauffeur privé · Séjours clé en main · Immobilier · Tables & restaurants · Événements · Personal shopping · Séjour esthétique · Création & marketing · Conciergerie sur demande.
 
 Les cabinets esthétiques partenaires ne sont cités que si `CABINETS` est renseigné dans `src/config.ts`.
+
+## Les réalisations
+
+Dans le chapitre « L'image », à la suite du film Création & marketing, une grille montre ce que la maison a créé : films, visuels et sites. Elle se filtre par nature, un film se lance au survol de sa tuile, et chaque tuile ouvre une visionneuse (flèches du clavier pour passer à la suivante, Échap pour fermer).
+
+La liste est dans `src/realisations.ts`. Pour ajouter une réalisation :
+
+1. déposer l'image dans `public/realisations/` (JPEG, 1440 px de large) ;
+2. pour un film, déposer le MP4 dans `public/video/` ;
+3. ajouter une ligne dans `REALISATIONS` : nature (film, visuel ou site), nom, client, année, image, film ou adresse du site, et place dans la grille.
+
+Aujourd'hui la grille ne montre que les créations faites pour Amane elle-même. Un client ne doit y être cité qu'avec son accord écrit.
+
+## Le jeu de cartes
+
+`src/components/Jeu.tsx` pose six cartes sur un tapis : les quatre figures, encadrées par les deux as.
+
+- **La donne.** Quand le tapis arrive à l'écran, le paquet est distribué en éventail et les cartes se retournent une à une.
+- **Le battage.** « Battre les cartes » ramasse le paquet, le bat, puis redonne dans un nouvel ordre.
+- **Au pointeur.** Une carte se lève et s'incline vers la souris, un reflet doré la suit ; un trait de lumière passe régulièrement de carte en carte.
+- **Le choix.** Un clic redresse la carte et l'avance ; les autres s'effacent. Échap ou un second clic la repose.
+
+Avec « réduire les animations », les cartes sont posées d'emblée, sans mouvement.
 
 ## Ce que fait le formulaire
 
