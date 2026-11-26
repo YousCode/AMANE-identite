@@ -4,14 +4,15 @@ import type { Lang } from './i18n';
  * Les réalisations montrées dans la partie « Création & marketing » : films, visuels et sites.
  *
  * Pour en ajouter une : déposer l'image dans public/realisations/ (JPEG, 1440 px de large),
- * le film éventuel en MP4 dans public/video/, puis ajouter une ligne ci-dessous.
+ * le film éventuel en MP4 dans public/video/, puis ajouter une entrée ci-dessous.
  *
  *  kind     0 film · 1 visuel · 2 site (les libellés traduits sont dans `wKinds`, src/i18n.ts)
  *  title    le nom de la réalisation, tel qu'il est signé (non traduit)
- *  client   pour qui elle a été faite. Ne citer un client qu'avec son accord écrit.
+ *  client   pour qui elle a été faite. Ne citer un client ou un partenaire qu'avec son accord.
  *  roles    ce que la maison a fait, affiché en petites bulles. Clés traduites dans `wRoles`
  *           (da, film, montage, photo, identite, illustration, design, dev, seo, social) ;
  *           tout autre texte est affiché tel quel.
+ *  avec     avec qui le projet a été mené (partenaires, studios, agences), affiché en bulles « Avec … »
  *  note     une phrase sur le projet, par langue ; le français sert de repli.
  *  img      l'image de la tuile et de la visionneuse
  *  video    film lu au survol et dans la visionneuse
@@ -25,6 +26,7 @@ export type Realisation = {
   client: string;
   year: string;
   roles: string[];
+  avec?: string[];
   note?: Partial<Record<Lang, string>>;
   img: string;
   video?: string;
@@ -67,20 +69,38 @@ export const REALISATIONS: Realisation[] = [
     format: 'etroit',
   },
   {
-    id: 'identite',
-    kind: 1,
-    title: 'L’identité',
-    client: 'Maison Amane',
+    id: 'site-lease-auto',
+    kind: 2,
+    title: 'lease-auto.fr',
+    client: 'Lease Auto',
     year: '2026',
-    roles: ['identite', 'da'],
+    roles: ['design', 'dev'],
     note: {
-      fr: 'Le logo : une arche, un A, une serrure.',
-      en: 'The logo: an arch, an A, a keyhole.',
-      es: 'El logotipo: un arco, una A, una cerradura.',
-      ar: 'الشعار: قوس وحرف A وثقب مفتاح.',
+      fr: 'Le site d’un spécialiste de la location avec option d’achat : offres, financement, demande en ligne.',
+      en: 'The website of a lease-to-own specialist: offers, financing, online request.',
+      es: 'El sitio de un especialista en leasing con opción de compra: ofertas, financiación, solicitud en línea.',
+      ar: 'موقع متخصص في التأجير المنتهي بالتمليك: العروض والتمويل والطلب عبر الإنترنت.',
     },
-    img: 'realisations/identite.jpg',
-    format: 'tiers',
+    img: 'realisations/lease-auto.jpg',
+    href: 'https://www.lease-auto.fr/',
+    format: 'demi',
+  },
+  {
+    id: 'site-kiess',
+    kind: 2,
+    title: 'kiess.fr',
+    client: 'Kiess',
+    year: '2026',
+    roles: ['design', 'dev'],
+    note: {
+      fr: 'Le site de préinscription d’une application de rencontre où la photo se mérite.',
+      en: 'The pre-registration site of a dating app where the photo has to be earned.',
+      es: 'El sitio de preinscripción de una aplicación de citas donde la foto se gana.',
+      ar: 'موقع التسجيل المسبق لتطبيق تعارف تُكشف فيه الصورة تدريجياً.',
+    },
+    img: 'realisations/kiess.jpg',
+    href: 'https://kiess.fr/',
+    format: 'demi',
   },
   {
     id: 'film-arrivee',
@@ -100,22 +120,6 @@ export const REALISATIONS: Realisation[] = [
     format: 'tiers',
   },
   {
-    id: 'brandbook',
-    kind: 1,
-    title: 'Le brand book',
-    client: 'Maison Amane',
-    year: '2026',
-    roles: ['identite', 'design'],
-    note: {
-      fr: 'Les règles de la marque, de la couleur à la typographie.',
-      en: 'The brand rules, from colour to typography.',
-      es: 'Las reglas de la marca, del color a la tipografía.',
-      ar: 'قواعد العلامة، من اللون إلى الخط.',
-    },
-    img: 'realisations/brandbook.jpg',
-    format: 'tiers',
-  },
-  {
     id: 'site-amane',
     kind: 2,
     title: 'amane.paris',
@@ -130,7 +134,7 @@ export const REALISATIONS: Realisation[] = [
     },
     img: 'realisations/site-amane.jpg',
     href: 'https://amane.paris/',
-    format: 'demi',
+    format: 'tiers',
   },
   {
     id: 'film-cour',
@@ -147,6 +151,6 @@ export const REALISATIONS: Realisation[] = [
     },
     img: 'img/cour-poster.jpg',
     video: 'video/cour.mp4',
-    format: 'demi',
+    format: 'tiers',
   },
 ];

@@ -161,9 +161,14 @@ export function Realisations({ d, lang }: { d: Dict; lang: Lang }) {
   );
 }
 
-/** Les petites bulles d'une réalisation : pour qui, ce que la maison a fait, l'année. */
+/** Les petites bulles d'une réalisation : pour qui, avec qui, ce que la maison a fait, l'année. */
 function Bulles({ r, d }: { r: Realisation; d: Dict }) {
-  const items = [`${d.wFor} ${r.client}`, ...r.roles.map((k) => d.wRoles[k] ?? k), r.year];
+  const items = [
+    `${d.wFor} ${r.client}`,
+    ...(r.avec ?? []).map((nom) => `${d.wWith} ${nom}`),
+    ...r.roles.map((k) => d.wRoles[k] ?? k),
+    r.year,
+  ];
   return (
     <ul className="bulles">
       {items.map((t, b) => (

@@ -122,9 +122,9 @@ La liste est dans `src/realisations.ts`. Pour ajouter une réalisation :
 2. pour un film, déposer le MP4 dans `public/video/` ;
 3. ajouter une entrée dans `REALISATIONS` : nature (film, visuel ou site), nom, client, année, rôles, une phrase de présentation, image, film ou adresse du site, et place dans la grille.
 
-Chaque tuile porte de petites bulles : pour qui le projet a été fait, ce que la maison y a fait (`roles`) et l'année. Elles apparaissent au survol ; au doigt ou au clavier, le bouton « + » de la tuile les déplie. Les rôles courants sont traduits dans `wRoles` (`src/i18n.ts`) : `da`, `film`, `montage`, `photo`, `identite`, `illustration`, `design`, `dev`, `seo`, `social`. Tout autre texte est affiché tel quel.
+Chaque tuile porte de petites bulles : pour qui le projet a été fait (`client`), avec qui (`avec`), ce que la maison y a fait (`roles`) et l'année. Elles apparaissent au survol ; au doigt ou au clavier, le bouton « + » de la tuile les déplie. Les rôles courants sont traduits dans `wRoles` (`src/i18n.ts`) : `da`, `film`, `montage`, `photo`, `identite`, `illustration`, `design`, `dev`, `seo`, `social`. Tout autre texte est affiché tel quel.
 
-Aujourd'hui la grille ne montre que les créations faites pour Amane elle-même. Un client ne doit y être cité qu'avec son accord écrit.
+La grille montre les créations faites pour Amane (films, jeu de cartes, site) et deux sites livrés à des clients : `lease-auto.fr` et `kiess.fr`. Les captures de ces sites ont été prises sur leur version en ligne. Un client ou un partenaire (`avec`) ne doit y être cité qu'avec son accord.
 
 ## Le jeu de cartes
 
