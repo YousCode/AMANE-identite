@@ -1,11 +1,17 @@
 # Met le site en ligne sur l'hébergement OVH à chaque modification du dossier site/ sur main.
 #
 # Réglages à faire une fois dans GitHub → Settings → Secrets and variables → Actions :
-#   Variables : OVH_FTP_SERVER  (ex. ftp.cluster0XX.hosting.ovh.net, dans l'espace client OVH → FTP-SSH)
-#               OVH_FTP_USER    (identifiant FTP principal)
+#   Variables : OVH_FTP_SERVER   (ex. ftp.cluster0XX.hosting.ovh.net, dans l'espace client OVH → FTP-SSH)
+#               OVH_FTP_USER     (identifiant FTP principal)
 #               OVH_FTP_PROTOCOL (facultatif : ftps par défaut ; mettre ftp si OVH refuse ftps)
 #   Secret    : OVH_FTP_PASSWORD
-#   Facultatif : VITE_WHATSAPP_NUMBER, VITE_CONTACT_EMAIL (coordonnées affichées près du formulaire)
+#
+# Configuration du formulaire (facultatif : sans LEAD_TO_EMAIL, un amane-config.php déposé à la main
+# reste en place et n'est jamais écrasé). Elle est écrite dans amane-config.php, au-dessus de www/ :
+#   Variables : LEAD_TO_EMAIL, LEAD_FROM_EMAIL, LEAD_FROM_NAME, ALLOWED_ORIGINS, CRM_URL
+#   Secrets   : BREVO_API_KEY, CRM_SECRET
+#
+# Facultatif : VITE_WHATSAPP_NUMBER, VITE_CONTACT_EMAIL (coordonnées affichées près du formulaire).
 # Tant que OVH_FTP_SERVER n'est pas renseignée, le déploiement est simplement ignoré.
 
 name: Déploiement OVH
@@ -62,3 +68,40 @@ jobs:
           protocol: ${{ vars.OVH_FTP_PROTOCOL || 'ftps' }}
           local-dir: site/dist-ovh/
           server-dir: www/
+
+      # La configuration du formulaire : écrite par PHP lui-même (var_export), donc sans risque
+      # qu'un caractère d'une valeur casse le fichier. Elle n'est jamais dans www/.
+      - name: Configuration du formulaire
+        if: ${{ vars.LEAD_TO_EMAIL != '' }}
+        working-directory: ${{ runner.temp }}
+        env:
+          LEAD_TO_EMAIL: ${{ vars.LEAD_TO_EMAIL }}
+          LEAD_FROM_EMAIL: ${{ vars.LEAD_FROM_EMAIL }}
+          LEAD_FROM_NAME: ${{ vars.LEAD_FROM_NAME }}
+          ALLOWED_ORIGINS: ${{ vars.ALLOWED_ORIGINS }}
+          CRM_URL: ${{ vars.CRM_URL }}
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          CRM_SECRET: ${{ secrets.CRM_SECRET }}
+        run: |
+          mkdir -p amane-config
+          php -r '
+            $cles = ["BREVO_API_KEY", "LEAD_TO_EMAIL", "LEAD_FROM_EMAIL", "LEAD_FROM_NAME", "ALLOWED_ORIGINS", "CRM_URL", "CRM_SECRET"];
+            $config = [];
+            foreach ($cles as $cle) { $config[$cle] = trim((string) getenv($cle)); }
+            if ($config["LEAD_FROM_NAME"] === "") { $config["LEAD_FROM_NAME"] = "Amane"; }
+            file_put_contents("amane-config/amane-config.php", "<?php\n// Écrit par le déploiement GitHub : ne pas modifier ici.\nreturn " . var_export($config, true) . ";\n");
+          '
+          php -l amane-config/amane-config.php
+
+      - name: Envoi de la configuration, au-dessus de www/
+        if: ${{ vars.LEAD_TO_EMAIL != '' }}
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ vars.OVH_FTP_SERVER }}
+          username: ${{ vars.OVH_FTP_USER }}
+          password: ${{ secrets.OVH_FTP_PASSWORD }}
+          protocol: ${{ vars.OVH_FTP_PROTOCOL || 'ftps' }}
+          local-dir: ${{ runner.temp }}/amane-config/
+          server-dir: ./
+          state-name: .amane-config-sync-state.json
+

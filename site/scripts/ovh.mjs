@@ -20,6 +20,8 @@ must(path.join(ovh, 'api', 'lead.php'), 'le formulaire PHP');
 fs.rmSync(out, { recursive: true, force: true });
 fs.cpSync(dist, out, { recursive: true });
 fs.copyFileSync(path.join(ovh, '.htaccess'), path.join(out, '.htaccess'));
+// Version de PHP du dossier (multisite OVH) : 8.3, sans passer par l'espace client.
+fs.copyFileSync(path.join(ovh, '.ovhconfig'), path.join(out, '.ovhconfig'));
 fs.cpSync(path.join(ovh, 'api'), path.join(out, 'api'), { recursive: true });
 
 // Le modèle de configuration et les secrets ne doivent jamais se retrouver dans www/.
@@ -28,7 +30,7 @@ const walk = (d) => {
   for (const f of fs.readdirSync(d)) {
     const p = path.join(d, f);
     if (fs.statSync(p).isDirectory()) walk(p);
-    else if (/config|\.env|\.map$/i.test(f) && f !== '.htaccess') interdits.push(path.relative(out, p));
+    else if (/config|\.env|\.map$/i.test(f) && !['.htaccess', '.ovhconfig'].includes(f)) interdits.push(path.relative(out, p));
   }
 };
 walk(out);

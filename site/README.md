@@ -44,10 +44,12 @@ Il faut, chez OVH : le nom de domaine `amane.paris` **et** une offre d'hébergem
 ### Une fois pour toutes, dans l'espace client OVH
 
 1. **Web Cloud → Hébergements → ton hébergement → Multisite** : ajouter `amane.paris` et `www.amane.paris`, dossier racine `www`, cocher **SSL**. Si le domaine est chez OVH, les enregistrements DNS se règlent tout seuls. Puis **Commander un certificat SSL** (Let's Encrypt, gratuit) s'il ne l'est pas déjà.
-2. **Informations générales → Version PHP** : choisir **8.3** (8.1 minimum).
+2. **Version PHP** : rien à faire. Le fichier `.ovhconfig` publié dans `www/` règle le dossier sur PHP 8.3.
 3. **FTP-SSH** : noter le serveur FTP et l'identifiant, définir un mot de passe.
 4. **E-mails** (Web Cloud → E-mails → amane.paris) : créer l'adresse d'expédition, par exemple `demande@amane.paris`. C'est elle qui envoie les demandes et reçoit les réponses des clients à l'accusé de réception.
-5. **La configuration du formulaire**, à déposer **à la racine de l'espace FTP, au-dessus de `www/`** (jamais dans `www/`) : copier `ovh/amane-config.example.php` en `amane-config.php`, le remplir, puis l'envoyer avec FileZilla.
+5. **La configuration du formulaire**, dans le fichier `amane-config.php`, **à la racine de l'espace FTP, au-dessus de `www/`** (jamais dans `www/`). Deux façons :
+   - **par GitHub (recommandé)** : renseigner les variables et secrets du formulaire listés sous « Publier » ; le déploiement écrit le fichier et le dépose au bon endroit ;
+   - **à la main** : copier `ovh/amane-config.example.php` en `amane-config.php`, le remplir, puis l'envoyer avec FileZilla. Tant que la variable `LEAD_TO_EMAIL` n'est pas renseignée dans GitHub, le déploiement n'y touche jamais.
    - **Les e-mails.** Avec `LEAD_TO_EMAIL` et `LEAD_FROM_EMAIL`, ils partent par l'envoi intégré d'OVH ; ajouter `BREVO_API_KEY` les fait passer par Brevo (meilleure délivrabilité, voir plus bas).
    - **Le lien avec le CRM** (facultatif, voir « Ce que fait le formulaire »). Deux clés, à remplir ensemble :
      - `CRM_URL` : l'adresse du CRM, qui commence par `https://`, sans rien après le nom de domaine (par exemple `https://crm.exemple.fr`) ;
@@ -59,12 +61,18 @@ Il faut, chez OVH : le nom de domaine `amane.paris` **et** une offre d'hébergem
 
 **Automatiquement (recommandé).** Le fichier `.github/workflows/deploy-ovh.yml` publie le site à chaque modification de `site/` sur `main`. Dans GitHub → **Settings → Secrets and variables → Actions**, renseigner :
 
-| Type                  | Nom                | Valeur                                             |
-| --------------------- | ------------------ | -------------------------------------------------- |
-| Variable              | `OVH_FTP_SERVER`   | serveur FTP (ex. `ftp.cluster0XX.hosting.ovh.net`) |
-| Variable              | `OVH_FTP_USER`     | identifiant FTP                                    |
-| Secret                | `OVH_FTP_PASSWORD` | mot de passe FTP                                   |
-| Variable (facultatif) | `OVH_FTP_PROTOCOL` | `ftps` par défaut ; `ftp` si OVH refuse le chiffré |
+| Type                  | Nom                | Valeur                                                           |
+| --------------------- | ------------------ | ---------------------------------------------------------------- |
+| Variable              | `OVH_FTP_SERVER`   | serveur FTP (ex. `ftp.cluster0XX.hosting.ovh.net`)               |
+| Variable              | `OVH_FTP_USER`     | identifiant FTP                                                  |
+| Secret                | `OVH_FTP_PASSWORD` | mot de passe FTP                                                 |
+| Variable (facultatif) | `OVH_FTP_PROTOCOL` | `ftps` par défaut ; `ftp` si OVH refuse le chiffré               |
+| Variable              | `LEAD_TO_EMAIL`    | adresse(s) qui reçoivent les demandes, séparées par des virgules |
+| Variable              | `LEAD_FROM_EMAIL`  | adresse d'expédition, par exemple `demande@amane.paris`          |
+| Variable (facultatif) | `LEAD_FROM_NAME`   | nom d'expéditeur (`Amane` par défaut)                            |
+| Secret (facultatif)   | `BREVO_API_KEY`    | clé API Brevo ; vide, les e-mails partent par OVH                |
+| Variable (facultatif) | `CRM_URL`          | adresse du CRM, en `https://`                                    |
+| Secret (facultatif)   | `CRM_SECRET`       | le même secret que `SITE_LEAD_SECRET` côté CRM                   |
 
 Puis **Actions → Déploiement OVH → Run workflow** pour la première mise en ligne. Les suivantes sont automatiques ; seuls les fichiers modifiés sont renvoyés.
 
