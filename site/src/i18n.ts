@@ -484,32 +484,39 @@ export const SLOGAN = ['Arrive as a <em>Guest.</em>', 'Leave with a <em>Story.</
  * Tout ce que fait Amane. `id` sert d'ancre et d'identifiant envoyé au serveur (la même liste est tenue
  * dans api/_lib/lead-core.js) ; `film` et `portrait` nomment les fichiers de public/video ;
  * `flip` place le texte du côté opposé au sujet de l'image.
+ * `passage` nomme le plan de caméra (public/passages/) qui amène à ce film depuis le film précédent ;
+ * vide quand le film suit une ouverture de chapitre, dont le passage se termine déjà sur sa première image.
  */
+
 export const SERVICES = [
-  { key: 's3', id: 'van', film: 'van', portrait: 'm-van', flip: false },
-  { key: 's1', id: 'voitures', film: 'jour-montaigne', portrait: '', flip: true },
-  { key: 's2', id: 'chauffeur', film: 'volant', portrait: 'm-chauffeur', flip: false },
-  { key: 's5', id: 'sejours', film: 'salon', portrait: '', flip: true },
-  { key: 's7', id: 'immobilier', film: 'appartement', portrait: 'm-appartement', flip: false },
-  { key: 's8', id: 'tables', film: 'table', portrait: 'm-table', flip: true },
-  { key: 's9', id: 'evenements', film: 'reception', portrait: '', flip: false },
-  { key: 's4', id: 'shopping', film: 'shopping', portrait: '', flip: false },
-  { key: 's10', id: 'esthetique', film: 'clinique', portrait: 'm-clinique', flip: true },
-  { key: 's11', id: 'creation', film: 'tournage', portrait: '', flip: true },
-  { key: 's6', id: 'conciergerie', film: 'cour', portrait: '', flip: false },
+  { key: 's3', id: 'van', film: 'van', portrait: 'm-van', flip: false, passage: '' },
+  { key: 's1', id: 'voitures', film: 'jour-montaigne', portrait: '', flip: true, passage: '' },
+  { key: 's2', id: 'chauffeur', film: 'volant', portrait: 'm-chauffeur', flip: false, passage: 'p04' },
+  { key: 's5', id: 'sejours', film: 'salon', portrait: '', flip: true, passage: '' },
+  { key: 's7', id: 'immobilier', film: 'appartement', portrait: 'm-appartement', flip: false, passage: 'p06' },
+  { key: 's8', id: 'tables', film: 'table', portrait: 'm-table', flip: true, passage: '' },
+  { key: 's9', id: 'evenements', film: 'reception', portrait: '', flip: false, passage: 'p08' },
+  { key: 's4', id: 'shopping', film: 'shopping', portrait: '', flip: false, passage: '' },
+  { key: 's10', id: 'esthetique', film: 'clinique', portrait: 'm-clinique', flip: true, passage: 'p10' },
+  { key: 's11', id: 'creation', film: 'tournage', portrait: '', flip: true, passage: '' },
+  { key: 's6', id: 'conciergerie', film: 'cour', portrait: '', flip: false, passage: '' },
 ] as const;
 
 export type ServiceId = (typeof SERVICES)[number]['id'];
 
-/** Le récit : chaque chapitre réunit un ou deux services. L'ordre suit `chapters` dans les dictionnaires. */
-export const CHAPTERS: { id: string; services: ServiceId[] }[] = [
-  { id: 'arrivee', services: ['van'] },
-  { id: 'route', services: ['voitures', 'chauffeur'] },
-  { id: 'adresse', services: ['sejours', 'immobilier'] },
-  { id: 'table', services: ['tables', 'evenements'] },
-  { id: 'soi', services: ['shopping', 'esthetique'] },
-  { id: 'image', services: ['creation'] },
-  { id: 'reste', services: ['conciergerie'] },
+/**
+ * Le récit : chaque chapitre réunit un ou deux services. L'ordre suit `chapters` dans les dictionnaires.
+ * Son titre est posé sur un passage : le plan de caméra qui quitte le film précédent et arrive
+ * exactement sur la première image du premier film du chapitre.
+ */
+export const CHAPTERS: { id: string; services: ServiceId[]; passage: string }[] = [
+  { id: 'arrivee', services: ['van'], passage: 'p01' },
+  { id: 'route', services: ['voitures', 'chauffeur'], passage: 'p03' },
+  { id: 'adresse', services: ['sejours', 'immobilier'], passage: 'p05' },
+  { id: 'table', services: ['tables', 'evenements'], passage: 'p07' },
+  { id: 'soi', services: ['shopping', 'esthetique'], passage: 'p09' },
+  { id: 'image', services: ['creation'], passage: 'p11' },
+  { id: 'reste', services: ['conciergerie'], passage: 'p12' },
 ];
 
 export const FLEET = [

@@ -6,12 +6,15 @@ const clamp = (x: number, min = 0, max = 1) => Math.min(max, Math.max(min, x));
 type Item = { el: HTMLElement; scene: boolean; last: string; open: boolean };
 
 const OPEN_AT = 0.72;
+/** Adoucissement « smootherstep » : départ et arrivée sans à-coup. */
+const ease = (t: number) => t * t * t * (t * (t * 6 - 15) + 10);
 
 /**
  * Le défilement mis en scène. À chaque image, trois valeurs sont écrites en variables CSS ;
  * tout le mouvement lui-même est décrit dans styles.css.
  *
  *  .scene        --enter  0 (encore sous l'écran) → 1 (épinglée en haut)
+ *                --e      la même progression, adoucie au départ et à l'arrivée (transitions)
  *                --leave  0 (épinglée) → 1 (entièrement recouverte par la scène suivante)
  *  [data-drift]  --drift  −1 (entre par le bas) → 0 (au centre) → 1 (sort par le haut)
  *  <html>        --page   avancement dans la page, de 0 à 1
@@ -57,6 +60,7 @@ export function useScenes() {
       if (it.scene) {
         const [enter, leave] = value.split(' ');
         it.el.style.setProperty('--enter', enter);
+        it.el.style.setProperty('--e', ease(Number(enter)).toFixed(4));
         it.el.style.setProperty('--leave', leave);
         if (!it.open && Number(enter) >= OPEN_AT) {
           it.open = true;

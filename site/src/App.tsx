@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { usePassages } from './passages';
 import { CHAPTERS, SERVICES, dict, numerals, type Lang } from './i18n';
 import { CABINETS } from './config';
 import { finePointer, reducedMotion, smooth } from './ui';
@@ -18,6 +19,7 @@ export function App({ lang }: { lang: Lang }) {
   const cabinets = CABINETS.length ? `${d.eList} : ${CABINETS.join(' · ')}` : undefined;
 
   useScenes();
+  usePassages();
 
   // Apparition des blocs à l'entrée dans l'écran, une seule fois.
   useEffect(() => {
@@ -80,6 +82,7 @@ export function App({ lang }: { lang: Lang }) {
                   onAsk={() => setService(i)}
                   rank={num[ci]}
                   flip={s.flip}
+                  passage={s.passage}
                   note={s.id === 'esthetique' ? cabinets : undefined}
                 />
               );
@@ -96,6 +99,7 @@ export function App({ lang }: { lang: Lang }) {
                 line={d.ip}
                 cta={d.cta}
                 rank={num[ci]}
+                passage="p02"
                 flip
               />
             )}

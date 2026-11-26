@@ -53,8 +53,8 @@ AddType application/xml .xml
     Header set Cache-Control "public, max-age=31536000, immutable"
   </If>
 
-  # Films, images, porte, cartes : un jour, puis revalidation.
-  <If "%{REQUEST_URI} =~ m#^/(video|img|frames|cartes)/#">
+  # Films, images, porte, passages, cartes : un jour, puis revalidation.
+  <If "%{REQUEST_URI} =~ m#^/(video|img|frames|passages|cartes)/#">
     Header set Cache-Control "public, max-age=86400, stale-while-revalidate=604800"
   </If>
 
