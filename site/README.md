@@ -47,7 +47,13 @@ Il faut, chez OVH : le nom de domaine `amane.paris` **et** une offre d'hébergem
 2. **Informations générales → Version PHP** : choisir **8.3** (8.1 minimum).
 3. **FTP-SSH** : noter le serveur FTP et l'identifiant, définir un mot de passe.
 4. **E-mails** (Web Cloud → E-mails → amane.paris) : créer l'adresse d'expédition, par exemple `demande@amane.paris`. C'est elle qui envoie les demandes et reçoit les réponses des clients à l'accusé de réception.
-5. **La configuration du formulaire**, à déposer **à la racine de l'espace FTP, au-dessus de `www/`** (jamais dans `www/`) : copier `ovh/amane-config.example.php` en `amane-config.php`, le remplir, puis l'envoyer avec FileZilla. Avec `LEAD_TO_EMAIL` et `LEAD_FROM_EMAIL`, les e-mails partent par l'envoi intégré d'OVH ; ajouter `BREVO_API_KEY` les fait passer par Brevo (meilleure délivrabilité, voir plus bas).
+5. **La configuration du formulaire**, à déposer **à la racine de l'espace FTP, au-dessus de `www/`** (jamais dans `www/`) : copier `ovh/amane-config.example.php` en `amane-config.php`, le remplir, puis l'envoyer avec FileZilla.
+   - **Les e-mails.** Avec `LEAD_TO_EMAIL` et `LEAD_FROM_EMAIL`, ils partent par l'envoi intégré d'OVH ; ajouter `BREVO_API_KEY` les fait passer par Brevo (meilleure délivrabilité, voir plus bas).
+   - **Le lien avec le CRM** (facultatif, voir « Ce que fait le formulaire »). Deux clés, à remplir ensemble :
+     - `CRM_URL` : l'adresse du CRM, qui commence par `https://`, sans rien après le nom de domaine (par exemple `https://crm.exemple.fr`) ;
+     - `CRM_SECRET` : le secret partagé avec le CRM. Il doit être **exactement le même** que `SITE_LEAD_SECRET` côté CRM, et faire au moins 32 caractères tirés au hasard. Pour en fabriquer un : `openssl rand -hex 32` dans un terminal, puis coller la même valeur des deux côtés. Ne jamais l'écrire dans le dépôt ni l'envoyer par e-mail.
+
+     Les deux clés vides : le site n'envoie rien au CRM et tout fonctionne comme avant. Une seule remplie, une adresse qui ne commence pas par `https://` ou un secret trop court : le lien reste inactif et le journal d'erreurs PHP le signale à chaque demande (« lien CRM inactif »), sans jamais afficher de valeur.
 
 ### Publier
 
@@ -69,12 +75,13 @@ Puis **Actions → Déploiement OVH → Run workflow** pour la première mise en
 - `https://amane.paris` affiche la porte ; `http://` et `www.` renvoient vers `https://amane.paris`.
 - `https://amane.paris/sitemap.xml` liste les quatre langues.
 - Une demande envoyée avec ta propre adresse arrive à `LEAD_TO_EMAIL`, et l'accusé de réception dans ta boîte.
+- Si le lien avec le CRM est configuré, la même demande apparaît dans le CRM (nouvelle demande, source « site »). Sinon, regarder le journal d'erreurs PHP (espace client OVH → Statistiques et logs) : « CRM : HTTP 403 » veut dire que le secret n'est pas le même des deux côtés (ou que l'horloge d'un des deux serveurs est fausse de plus de cinq minutes) ; « CRM injoignable » que l'adresse est mauvaise ou que le CRM ne répond pas.
 
 `ovh/.htaccess` règle la redirection HTTPS, l'adresse unique, la compression, le cache et la réécriture de `/api/lead` vers le script PHP.
 
 ### Autre hébergeur
 
-`vercel.json` et `api/lead.js` permettent toujours de servir le même site sur Vercel (Root Directory : `site`, variables d'environnement de `.env.example`).
+`vercel.json` et `api/lead.js` permettent toujours de servir le même site sur Vercel (Root Directory : `site`, variables d'environnement de `.env.example`). Le lien avec le CRM s'y règle avec deux variables d'environnement de plus, `CRM_URL` et `CRM_SECRET`, aux mêmes conditions que sur OVH.
 
 ### Brevo (facultatif)
 
@@ -143,6 +150,26 @@ Avec « réduire les animations », les cartes sont posées d'emblée, sans mouv
 - L'équipe reçoit la demande par e-mail ; « Répondre » écrit directement au client.
 - Si le client a donné un e-mail, il reçoit un accusé de réception dans sa langue. L'accusé ne reprend aucun texte libre : seulement le service, la date et le nombre de passagers.
 - Protections : champ piège pour les robots, même origine seulement, 5 envois par heure et par adresse IP.
+- Si le lien avec le CRM est configuré (`CRM_URL` et `CRM_SECRET`), chaque demande acceptée est aussi enregistrée dans le CRM de la maison : fiche client et nouvelle demande.
+
+### Le lien avec le CRM
+
+Le site envoie la demande au CRM directement, de serveur à serveur, avant les e-mails. L'envoi est signé avec un secret que seuls le site et le CRM connaissent : le CRM refuse tout ce qui n'est pas signé par le site, ou qui a plus de cinq minutes. Le site attend la réponse du CRM cinq secondes au plus.
+
+Le CRM reçoit ce que le formulaire a recueilli, une fois nettoyé : nom, téléphone, e-mail, langue, service, date, passagers, message. Il ne reçoit ni l'adresse IP du visiteur ni le champ piège. Une demande arrêtée par une protection (robot, saisie invalide, trop d'envois) n'arrive jamais au CRM.
+
+Le but : une demande n'est perdue que si tout échoue.
+
+| E-mail à l'équipe | CRM                             | Ce que voit le client | Ce qui se passe                                                                                                            |
+| ----------------- | ------------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Envoyé            | Demande enregistrée             | La confirmation       | La demande est dans la boîte de l'équipe et dans le CRM. Le client reçoit son accusé de réception.                         |
+| Envoyé            | En panne                        | La confirmation       | L'équipe a la demande par e-mail, le client son accusé de réception. La panne du CRM est notée dans le journal.            |
+| En panne          | Demande enregistrée             | La confirmation       | La demande est dans le CRM. Le client ne reçoit pas d'accusé de réception. La panne de l'e-mail est notée dans le journal. |
+| En panne          | En panne, ou lien non configuré | Un message d'erreur   | Rien n'a été enregistré : le client est invité à réessayer ou à joindre la maison autrement.                               |
+
+Si l'e-mail n'est pas configuré du tout mais que le lien avec le CRM l'est, la demande part au CRM seul, sans accusé de réception ; si le CRM ne la prend pas, le client voit le message d'erreur.
+
+Le journal ne contient jamais le secret, l'adresse du CRM ni le contenu d'une demande : seulement une ligne comme « CRM : HTTP 403 » ou « CRM injoignable : délai dépassé ».
 
 ## Référencement
 

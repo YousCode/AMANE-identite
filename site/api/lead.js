@@ -1,5 +1,6 @@
 // POST /api/lead — fonction serverless Vercel (Node 20+, ESM, sans dépendance).
-// Reçoit le formulaire de demande et envoie deux e-mails via Brevo.
+// Reçoit le formulaire de demande, le transmet au CRM de la maison (si CRM_URL et
+// CRM_SECRET sont renseignées) et envoie deux e-mails via Brevo.
 // Toute la logique est dans _lib/lead-core.js ; ce fichier ne fait que lire
 // la requête et écrire la réponse.
 

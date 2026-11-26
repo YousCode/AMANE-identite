@@ -3,9 +3,11 @@
 /**
  * POST /api/lead — formulaire de demande, version hébergement OVH (Apache + PHP).
  *
- * Reçoit le formulaire du site et envoie deux e-mails : la demande à l'équipe,
- * un accusé de réception au client. Toute la logique est dans _lib/lead.php ;
- * ce fichier ne fait que brancher la requête, la configuration et la réponse.
+ * Reçoit le formulaire du site, transmet la demande au CRM de la maison (si le
+ * lien est configuré : CRM_URL et CRM_SECRET) et envoie deux e-mails : la demande
+ * à l'équipe, un accusé de réception au client. Toute la logique est dans
+ * _lib/lead.php ; ce fichier ne fait que brancher la requête, la configuration
+ * et la réponse.
  *
  * Adresse : /api/lead (réécriture du .htaccess à la racine du site) ou,
  * directement, /api/lead.php.
