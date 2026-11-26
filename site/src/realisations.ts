@@ -69,23 +69,6 @@ export const REALISATIONS: Realisation[] = [
     format: 'etroit',
   },
   {
-    id: 'site-lease-auto',
-    kind: 2,
-    title: 'lease-auto.fr',
-    client: 'Lease Auto',
-    year: '2026',
-    roles: ['design', 'dev'],
-    note: {
-      fr: 'Le site d’un spécialiste de la location avec option d’achat : offres, financement, demande en ligne.',
-      en: 'The website of a lease-to-own specialist: offers, financing, online request.',
-      es: 'El sitio de un especialista en leasing con opción de compra: ofertas, financiación, solicitud en línea.',
-      ar: 'موقع متخصص في التأجير المنتهي بالتمليك: العروض والتمويل والطلب عبر الإنترنت.',
-    },
-    img: 'realisations/lease-auto.jpg',
-    href: 'https://www.lease-auto.fr/',
-    format: 'demi',
-  },
-  {
     id: 'site-kiess',
     kind: 2,
     title: 'kiess.fr',
@@ -117,7 +100,7 @@ export const REALISATIONS: Realisation[] = [
     },
     img: 'img/arrivee-poster.jpg',
     video: 'video/arrivee.mp4',
-    format: 'tiers',
+    format: 'demi',
   },
   {
     id: 'site-amane',
@@ -134,7 +117,7 @@ export const REALISATIONS: Realisation[] = [
     },
     img: 'realisations/site-amane.jpg',
     href: 'https://amane.paris/',
-    format: 'tiers',
+    format: 'demi',
   },
   {
     id: 'film-cour',
@@ -151,6 +134,6 @@ export const REALISATIONS: Realisation[] = [
     },
     img: 'img/cour-poster.jpg',
     video: 'video/cour.mp4',
-    format: 'tiers',
+    format: 'demi',
   },
 ];

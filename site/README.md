@@ -124,7 +124,7 @@ La liste est dans `src/realisations.ts`. Pour ajouter une réalisation :
 
 Chaque tuile porte de petites bulles : pour qui le projet a été fait (`client`), avec qui (`avec`), ce que la maison y a fait (`roles`) et l'année. Elles apparaissent au survol ; au doigt ou au clavier, le bouton « + » de la tuile les déplie. Les rôles courants sont traduits dans `wRoles` (`src/i18n.ts`) : `da`, `film`, `montage`, `photo`, `identite`, `illustration`, `design`, `dev`, `seo`, `social`. Tout autre texte est affiché tel quel.
 
-La grille montre les créations faites pour Amane (films, jeu de cartes, site) et deux sites livrés à des clients : `lease-auto.fr` et `kiess.fr`. Les captures de ces sites ont été prises sur leur version en ligne. Un client ou un partenaire (`avec`) ne doit y être cité qu'avec son accord.
+La grille montre les créations faites pour Amane (films, jeu de cartes, site) et un site livré à un client : `kiess.fr`, capturé sur sa version en ligne. Un client ou un partenaire (`avec`) ne doit y être cité qu'avec son accord.
 
 ## Le jeu de cartes
 
