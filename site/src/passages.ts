@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { asset } from './config';
+import { APERCU, asset } from './config';
 import { reducedMotion, useScrollFrame } from './ui';
 
 /**
@@ -33,24 +33,39 @@ type Item = {
 
 const clamp = (x: number) => Math.min(1, Math.max(0, x));
 
-/** Télécharge le fichier du passage et en sort les images (format décrit dans scripts/paquet-passage.mjs). */
+/** Découpe le fichier d'un passage en adresses d'images (format décrit dans scripts/paquet-passage.mjs). */
+function split(buf: ArrayBuffer) {
+  const view = new DataView(buf);
+  const count = view.getUint32(0, true);
+  let at = 4 + 4 * count;
+  return Array.from({ length: count }, (_, k) => {
+    const length = view.getUint32(4 + 4 * k, true);
+    const url = URL.createObjectURL(new Blob([buf.slice(at, at + length)], { type: 'image/webp' }));
+    at += length;
+    return url;
+  });
+}
+
+/**
+ * Télécharge le fichier du passage et en sort les images.
+ * L'aperçu autonome ne peut héberger que du texte et des médias courants : scripts/apercu.mjs y dépose
+ * les mêmes images en JSON (une liste d'images en base64), lues ici telles quelles.
+ */
 function load(it: Item) {
   if (it.requested) return;
   it.requested = true;
   const size = innerHeight > innerWidth ? 'm' : 'd';
   const turn = it.turn;
   it.abort = new AbortController();
-  fetch(asset(`passages/${it.cv.dataset.passage}-${size}.bin`), { signal: it.abort.signal })
-    .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
-    .then((buf) => {
-      if (turn !== it.turn) return;
-      const view = new DataView(buf);
-      const count = Math.min(view.getUint32(0, true), PASSAGE_FRAMES);
-      let at = 4 + 4 * view.getUint32(0, true);
-      for (let k = 0; k < count; k++) {
-        const length = view.getUint32(4 + 4 * k, true);
-        const url = URL.createObjectURL(new Blob([buf.slice(at, at + length)], { type: 'image/webp' }));
-        at += length;
+  fetch(asset(`passages/${it.cv.dataset.passage}-${size}.${APERCU ? 'json' : 'bin'}`), { signal: it.abort.signal })
+    .then((r) => (r.ok ? r : Promise.reject(new Error(String(r.status)))))
+    .then((r): Promise<string[]> =>
+      APERCU
+        ? r.json().then((list: string[]) => list.map((b64) => `data:image/webp;base64,${b64}`))
+        : r.arrayBuffer().then(split),
+    )
+    .then((urls) => {
+      urls.slice(0, PASSAGE_FRAMES).forEach((url, k) => {
         const img = new Image();
         img.decoding = 'async';
         img.onload = () => {
@@ -61,10 +76,10 @@ function load(it: Item) {
         };
         img.onerror = () => URL.revokeObjectURL(url);
         img.src = url;
-      }
+      });
     })
     .catch(() => {
-      // Pas de passage : l'affiche ou la vidéo reste à l'écran, et un nouvel essai aura lieu au prochain passage.
+      // Pas de passage : l'affiche ou la vidéo reste à l'écran. Nouvel essai quand la scène reviendra à portée.
       if (turn === it.turn) it.requested = false;
     });
 }

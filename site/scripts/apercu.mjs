@@ -35,6 +35,22 @@ for (const f of [cssFile, ...jsFiles, ...assets.filter((f) => f.endsWith('.woff'
   fs.rmSync(path.join(dist, 'assets', f));
 fs.rmSync(path.join(dist, 'index.html'));
 
+// Les passages sont des fichiers binaires, que l'aperçu ne peut pas héberger : les mêmes images, en JSON.
+const passages = path.join(dist, 'passages');
+for (const f of fs.existsSync(passages) ? fs.readdirSync(passages).filter((f) => f.endsWith('.bin')) : []) {
+  const buf = fs.readFileSync(path.join(passages, f));
+  const count = buf.readUInt32LE(0);
+  let at = 4 + 4 * count;
+  const images = [];
+  for (let k = 0; k < count; k++) {
+    const length = buf.readUInt32LE(4 + 4 * k);
+    images.push(buf.subarray(at, at + length).toString('base64'));
+    at += length;
+  }
+  fs.writeFileSync(path.join(passages, f.replace(/\.bin$/, '.json')), JSON.stringify(images));
+  fs.rmSync(path.join(passages, f));
+}
+
 const files = [];
 const walk = (d) =>
   fs.readdirSync(path.join(dist, d)).forEach((f) => {
