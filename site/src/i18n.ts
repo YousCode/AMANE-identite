@@ -612,7 +612,7 @@ export const SERVICES = [
   { key: 's9', id: 'evenements', film: 'reception', portrait: '', flip: false, passage: 'p08' },
   { key: 's4', id: 'shopping', film: 'shopping', portrait: '', flip: false, passage: '' },
   { key: 's10', id: 'esthetique', film: 'clinique', portrait: 'm-clinique', flip: true, passage: 'p10' },
-  { key: 's11', id: 'creation', film: 'tournage', portrait: '', flip: true, passage: '' },
+  { key: 's11', id: 'creation', film: 'tournage', portrait: '', flip: false, passage: '' },
   { key: 's6', id: 'conciergerie', film: 'cour', portrait: '', flip: false, passage: '' },
 ] as const;
 
