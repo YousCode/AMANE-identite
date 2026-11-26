@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Découpe les passages (plans de caméra entre deux films) en images fixes pour le défilement.
 # Usage : scripts/passages.sh <dossier contenant p01.mp4 … p12.mp4>   (ONLY="p03 p07" pour n'en refaire que certains)
-#   public/passages/pNN-d.bin   40 images 1280×720, plein cadre
+#   public/passages/pNN-d.bin   40 images 1600×900, plein cadre
 #   public/passages/pNN-m.bin   40 images 608×1080, recadrage central 9:16 pour les écrans en hauteur
 # Les 40 images sont réparties régulièrement sur toute la durée : la première et la dernière image
 # du plan sont toujours gardées, puisque ce sont elles qui raccordent avec les films.
@@ -25,8 +25,8 @@ for in in "$SRC"/p[0-9][0-9].mp4; do
     i=$(((k * (total - 1) + (N - 1) / 2) / (N - 1) + 1))
     src="$TMP/all/$(printf %04d "$i").png"
     kk=$(printf %02d "$k")
-    ffmpeg -v error -y -i "$src" -vf "scale=1280:720:flags=lanczos" -c:v libwebp -quality 64 "$TMP/web/d-$kk.webp"
-    ffmpeg -v error -y -i "$src" -vf "crop=608:1080,scale=608:1080" -c:v libwebp -quality 64 "$TMP/web/m-$kk.webp"
+    ffmpeg -v error -y -i "$src" -vf "scale=1600:900:flags=lanczos" -c:v libwebp -quality 72 "$TMP/web/d-$kk.webp"
+    ffmpeg -v error -y -i "$src" -vf "crop=608:1080" -c:v libwebp -quality 74 "$TMP/web/m-$kk.webp"
   done
   node "$HERE/paquet-passage.mjs" "$TMP/web" d "$OUT/$id-d.bin"
   node "$HERE/paquet-passage.mjs" "$TMP/web" m "$OUT/$id-m.bin"

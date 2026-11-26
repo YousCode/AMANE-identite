@@ -30,6 +30,7 @@ npm run format     # met en forme tout le code (Prettier)
 | `public/passages/`, `scripts/passages.sh`             | Les passages : plans de caméra entre deux films, en images fixes jouées au défilement (un fichier par passage)                                                                                                                                                               |
 | `public/frames/`                                      | Les 48 images de la porte qui s'ouvre au défilement                                                                                                                                                                                                                          |
 | `public/video/`, `public/img/`                        | Films des services en 1080p (MP4 + WebM), affiches, photos de la flotte, motif Arcades                                                                                                                                                                                       |
+| `src/realisations.ts`, `public/realisations/`         | Réalisations montrées dans la partie Création & marketing : la liste, et leurs images                                                                                                                                                                                        |
 | `public/cartes/`                                      | Figures du jeu de cartes Amane, rendues depuis le générateur du jeu                                                                                                                                                                                                          |
 | `scripts/encoder-films.sh`                            | Ré-encode les originaux Higgsfield pour le web                                                                                                                                                                                                                               |
 | `src/brand/`                                          | Logos copiés depuis `../logos/svg/` (couleur pilotée par le CSS)                                                                                                                                                                                                             |
@@ -95,7 +96,7 @@ La devise de la maison, « Arrive as a Guest. Leave with a Story. », structure 
 - **Les passages.** Les films et les ouvertures de chapitre sont des « scènes ». D'une scène à la suivante, il n'y a ni volet ni coupe : un plan de caméra, le passage, quitte la dernière image d'un film et arrive sur la première image du suivant. Il avance avec le défilement (`src/passages.ts`). Les douze passages sont listés dans `SERVICES` et `CHAPTERS` (`src/i18n.ts`) :
   - le titre d'un chapitre est posé sur le passage qui mène à son premier film ;
   - à l'intérieur d'un chapitre, le second film arrive par son propre passage, puis la vidéo prend le relais.
-- **Les images des passages.** Chaque passage est livré en 40 images réunies dans un seul fichier : `public/passages/pNN-d.bin` en 16:9 et `pNN-m.bin` recadré en 9:16 pour les téléphones. `scripts/passages.sh <dossier>` les découpe depuis les plans d'origine (`p01.mp4` à `p12.mp4`). Les images de départ et d'arrivée qui ont servi à générer les plans sont dans `../references/passages/`.
+- **Les images des passages.** Chaque passage est livré en 40 images réunies dans un seul fichier : `public/passages/pNN-d.bin` en 16:9 (1600×900) et `pNN-m.bin` recadré en 9:16 pour les téléphones. `scripts/passages.sh <dossier>` les découpe depuis les plans d'origine (`p01.mp4` à `p12.mp4`). Les images de départ et d'arrivée qui ont servi à générer les plans sont dans `../references/passages/`.
 - **Le texte attend l'image.** Une scène reçoit la classe `ouvert` quand elle est presque en place : son titre se dévoile alors mot à mot, puis la phrase et le lien.
 - **Le fil du récit** (`src/components/Fil.tsx`, grand écran) : Prologue, chapitres I à VII, Épilogue, cliquables, avec le chapitre en cours en or.
 - **Le sommaire** montre, au survol, l'image du chapitre dans une arche qui suit la souris.
@@ -110,6 +111,29 @@ La liste est dans `src/i18n.ts` (`SERVICES`) et, côté serveur, dans `api/_lib/
 Van VIP · Voitures d'exception · Chauffeur privé · Séjours clé en main · Immobilier · Tables & restaurants · Événements · Personal shopping · Séjour esthétique · Création & marketing · Conciergerie sur demande.
 
 Les cabinets esthétiques partenaires ne sont cités que si `CABINETS` est renseigné dans `src/config.ts`.
+
+## Les réalisations
+
+Dans le chapitre « L'image », à la suite du film Création & marketing, une grille montre ce que la maison a créé : films, visuels et sites. Elle se filtre par nature, un film se lance au survol de sa tuile, et chaque tuile ouvre une visionneuse (flèches du clavier pour passer à la suivante, Échap pour fermer).
+
+La liste est dans `src/realisations.ts`. Pour ajouter une réalisation :
+
+1. déposer l'image dans `public/realisations/` (JPEG, 1440 px de large) ;
+2. pour un film, déposer le MP4 dans `public/video/` ;
+3. ajouter une ligne dans `REALISATIONS` : nature (film, visuel ou site), nom, client, année, image, film ou adresse du site, et place dans la grille.
+
+Aujourd'hui la grille ne montre que les créations faites pour Amane elle-même. Un client ne doit y être cité qu'avec son accord écrit.
+
+## Le jeu de cartes
+
+`src/components/Jeu.tsx` pose six cartes sur un tapis : les quatre figures, encadrées par les deux as.
+
+- **La donne.** Quand le tapis arrive à l'écran, le paquet est distribué en éventail et les cartes se retournent une à une.
+- **Le battage.** « Battre les cartes » ramasse le paquet, le bat, puis redonne dans un nouvel ordre.
+- **Au pointeur.** Une carte se lève et s'incline vers la souris, un reflet doré la suit ; un trait de lumière passe régulièrement de carte en carte.
+- **Le choix.** Un clic redresse la carte et l'avance ; les autres s'effacent. Échap ou un second clic la repose.
+
+Avec « réduire les animations », les cartes sont posées d'emblée, sans mouvement.
 
 ## Ce que fait le formulaire
 
