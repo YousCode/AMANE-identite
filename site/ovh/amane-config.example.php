@@ -50,4 +50,28 @@ return [
     // Chaque entrée est une origine complète (https://www.exemple.fr) ou un hôte
     // seul (www.exemple.fr).
     'ALLOWED_ORIGINS' => '',
+
+    // ───── Lien avec le CRM de la maison (facultatif) ─────
+    //
+    // Quand les deux clés ci-dessous sont remplies, chaque demande du formulaire
+    // est aussi enregistrée dans le CRM (fiche client + nouvelle demande), en plus
+    // des e-mails. Si l'e-mail tombe en panne, la demande est quand même dans le
+    // CRM ; si le CRM est injoignable, l'e-mail part quand même.
+    // Laissez les deux vides pour ne pas utiliser le CRM : rien ne change.
+
+    // Adresse du CRM : seulement « https:// » et le nom de domaine, rien derrière
+    // (par exemple https://crm.exemple.fr). Elle doit commencer par https://.
+    'CRM_URL' => '',
+
+    // Secret partagé entre le site et le CRM : il prouve au CRM que la demande
+    // vient bien du site. Il doit être EXACTEMENT le même que la valeur
+    // SITE_LEAD_SECRET réglée côté CRM, et faire au moins 32 caractères tirés au
+    // hasard (ni mot, ni phrase, ni espace). Pour en fabriquer un, au choix :
+    //   - dans un terminal :   openssl rand -hex 32
+    //   - ou avec PHP :        php -r "echo bin2hex(random_bytes(32));"
+    //   - ou le générateur de mots de passe de votre navigateur (40 caractères
+    //     ou plus, lettres et chiffres).
+    // Collez la même valeur ici et dans SITE_LEAD_SECRET du CRM. Ne l'envoyez
+    // jamais par e-mail et ne l'écrivez jamais dans le dépôt.
+    'CRM_SECRET' => '',
 ];

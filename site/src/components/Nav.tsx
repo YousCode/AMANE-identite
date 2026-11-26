@@ -35,7 +35,13 @@ export function Nav({ d, lang }: { d: Dict; lang: Lang }) {
     }
     setTone((prev) => (prev === atTop ? prev : atTop));
     const demande = document.getElementById('demande')?.getBoundingClientRect();
-    const on = scrollY > innerHeight * 0.9 && !!demande && demande.top > innerHeight * 0.85;
+    // L'épilogue porte son propre bouton, juste avant le formulaire : le bouton flottant s'efface dès qu'il arrive.
+    const epilogue = document.getElementById('epilogue')?.getBoundingClientRect();
+    const on =
+      scrollY > innerHeight * 0.9 &&
+      !!demande &&
+      demande.top > innerHeight * 0.85 &&
+      !(epilogue && epilogue.top < innerHeight * 0.5);
     const dark = atBottom !== 'page';
     setFab((prev) => (prev.on === on && prev.dark === dark ? prev : { on, dark }));
   });

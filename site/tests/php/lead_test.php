@@ -7,7 +7,7 @@
  *   php site/tests/php/lead_test.php -v     une ligne par test
  *
  * Petit harnais maison, sans dépendance. Aucun vrai e-mail ni vraie requête :
- * l'envoi HTTP (Brevo) et mail() sont toujours simulés. Code de sortie 1 au
+ * l'envoi HTTP (Brevo, CRM) et mail() sont toujours simulés. Code de sortie 1 au
  * moindre échec. Les cas reprennent ceux de site/tests/api/lead.test.js.
  */
 
@@ -30,6 +30,7 @@ use function Amane\Lead\purgerLimite;
 use function Amane\Lead\teamEmail;
 
 use const Amane\Lead\BREVO_URL;
+use const Amane\Lead\CLES_CONFIG;
 use const Amane\Lead\SERVICES;
 use const Amane\Lead\TAILLE_MAX_CORPS;
 
@@ -188,6 +189,11 @@ const DEMANDE = [
     'a_laisser_vide' => '',
 ];
 
+/** Lien CRM actif : adresse et secret fictifs (le secret fait plus de 32 caractères). */
+const CRM_URL = 'https://crm.amane.test';
+const CRM_SECRET = 'secret-fictif-pour-les-tests-0123456789';
+const CONFIG_CRM = CONFIG + ['CRM_URL' => CRM_URL, 'CRM_SECRET' => CRM_SECRET];
+
 const T0 = 1_800_000_000; // 15 janvier 2027, 09:00 à Paris
 
 /**
@@ -225,6 +231,60 @@ function fauxHttp(int|\Throwable ...$reponses): object
             return $reponse;
         }
     };
+}
+
+/**
+ * Faux envoi HTTP qui distingue le CRM de Brevo par l'adresse appelée : à chacun
+ * sa suite de réponses (mêmes valeurs que pour fauxHttp). Par défaut : 200 pour
+ * le CRM, 201 pour Brevo. Tous les appels sont enregistrés, dans l'ordre.
+ *
+ * @param list<int|\Throwable> $crm
+ * @param list<int|\Throwable> $brevo
+ */
+function fauxReseau(array $crm = [], array $brevo = []): object
+{
+    return new class ($crm, $brevo) {
+        /** @var list<array{url: string, entetes: array<string, string>, brut: string, corps: array, delai: int}> */
+        public array $appels = [];
+
+        /**
+         * @param list<int|\Throwable> $crm
+         * @param list<int|\Throwable> $brevo
+         */
+        public function __construct(private array $crm, private array $brevo)
+        {
+        }
+
+        /** @param array<string, string> $entetes */
+        public function __invoke(string $url, array $entetes, string $corps, int $delai): int
+        {
+            $this->appels[] = [
+                'url' => $url,
+                'entetes' => $entetes,
+                'brut' => $corps,
+                'corps' => json_decode($corps, true, 512, JSON_THROW_ON_ERROR),
+                'delai' => $delai,
+            ];
+            $reponse = $url === BREVO_URL ? (array_shift($this->brevo) ?? 201) : (array_shift($this->crm) ?? 200);
+            if ($reponse instanceof \Throwable) {
+                throw $reponse;
+            }
+
+            return $reponse;
+        }
+    };
+}
+
+/**
+ * Parmi les appels HTTP enregistrés, ceux qui sont allés à Brevo (true) ou ailleurs,
+ * c'est-à-dire au CRM (false).
+ *
+ * @param list<array<string, mixed>> $appels
+ * @return list<array<string, mixed>>
+ */
+function appelsVers(array $appels, bool $brevo): array
+{
+    return array_values(array_filter($appels, static fn (array $appel): bool => ($appel['url'] === BREVO_URL) === $brevo));
 }
 
 /**
@@ -266,10 +326,12 @@ function fauxMail(bool|\Throwable ...$reponses): object
 /**
  * Envoie une demande à processLead(). $surcharge modifie la demande type ;
  * $options : body (corps entier), ip, origin, host, config, http, mail, now.
+ * Au retour, « appels » réunit tous les envois HTTP ; « brevo » et « crm » les
+ * séparent selon l'adresse appelée.
  *
  * @param array<string, mixed> $surcharge
  * @param array<string, mixed> $options
- * @return array{status: int, json: array<string, mixed>, headers: array<string, string>, appels: array, mails: array, journal: list<string>}
+ * @return array{status: int, json: array<string, mixed>, headers: array<string, string>, appels: array, brevo: array, crm: array, mails: array, journal: list<string>}
  */
 function demander(array $surcharge = [], array $options = []): array
 {
@@ -296,6 +358,8 @@ function demander(array $surcharge = [], array $options = []): array
         'json' => $json,
         'headers' => $headers,
         'appels' => $http->appels,
+        'brevo' => appelsVers($http->appels, true),
+        'crm' => appelsVers($http->appels, false),
         'mails' => $mail->appels,
         'journal' => $journal->getArrayCopy(),
     ];
@@ -941,11 +1005,17 @@ test('LEAD_FROM_NAME : « Amane » par défaut, sinon la valeur donnée', functi
 
 test('chargerConfig : le fichier d’abord, puis la variable d’environnement pour chaque clé vide', function (): void {
     $fichier = bilan()->dossier . '/amane-config.php';
-    file_put_contents($fichier, "<?php\nreturn ['BREVO_API_KEY' => ' cle-du-fichier ', 'LEAD_TO_EMAIL' => '', 'LEAD_FROM_NAME' => 'Amane'];\n");
+    file_put_contents(
+        $fichier,
+        "<?php\nreturn ['BREVO_API_KEY' => ' cle-du-fichier ', 'LEAD_TO_EMAIL' => '', 'LEAD_FROM_NAME' => 'Amane',"
+            . " 'CRM_URL' => ' https://crm.fichier.test ', 'CRM_SECRET' => ''];\n"
+    );
     $env = [
         'BREVO_API_KEY' => 'cle-de-l-environnement',
         'LEAD_TO_EMAIL' => ' equipe@env.test ',
         'LEAD_FROM_EMAIL' => 'bonjour@env.test',
+        'CRM_URL' => 'https://crm.env.test',
+        'CRM_SECRET' => ' secret-fictif-de-l-environnement ',
         'AUTRE' => 'ignorée',
     ];
     $config = chargerConfig($fichier, static fn (string $cle) => $env[$cle] ?? false);
@@ -955,6 +1025,8 @@ test('chargerConfig : le fichier d’abord, puis la variable d’environnement p
         'LEAD_FROM_EMAIL' => 'bonjour@env.test',
         'LEAD_FROM_NAME' => 'Amane',
         'ALLOWED_ORIGINS' => '',
+        'CRM_URL' => 'https://crm.fichier.test',
+        'CRM_SECRET' => 'secret-fictif-de-l-environnement',
     ], $config);
 });
 
@@ -963,7 +1035,7 @@ test('chargerConfig : fichier absent → variables d’environnement seules, sin
     $config = chargerConfig($absent, static fn (string $cle) => $cle === 'LEAD_TO_EMAIL' ? 'equipe@env.test' : false);
     egal('equipe@env.test', $config['LEAD_TO_EMAIL']);
     egal('', $config['BREVO_API_KEY']);
-    egal(['', '', '', '', ''], array_values(chargerConfig($absent, static fn (string $cle) => false)));
+    egal(['', '', '', '', '', '', ''], array_values(chargerConfig($absent, static fn (string $cle) => false)));
     egal(503, demander([], ['config' => chargerConfig($absent, static fn (string $cle) => false)])['status']);
 });
 
@@ -982,7 +1054,7 @@ test('chargerConfig : fichier défectueux → ignoré, sans rien afficher ni div
             $journal[] = $l;
         });
         egal('', ob_get_clean(), $nom);
-        egal(['', '', '', '', ''], array_values($config), $nom);
+        egal(['', '', '', '', '', '', ''], array_values($config), $nom);
         egal(1, count($journal), $nom);
         absent($journal[0], 'SECRET-EN-CLAIR', $nom);
     }
@@ -997,13 +1069,19 @@ test('chargerConfig : un fichier qui affiche quelque chose ne pollue pas la rép
     egal('equipe@amane.test', $config['LEAD_TO_EMAIL']);
 });
 
-test('le modèle amane-config.example.php renvoie les cinq clés, sans aucune valeur réelle', function (): void {
+test('le modèle amane-config.example.php renvoie les sept clés, sans aucune valeur réelle', function (): void {
     ob_start();
     $modele = require dirname(__DIR__, 2) . '/ovh/amane-config.example.php';
     egal('', ob_get_clean());
-    egal(['BREVO_API_KEY', 'LEAD_TO_EMAIL', 'LEAD_FROM_EMAIL', 'LEAD_FROM_NAME', 'ALLOWED_ORIGINS'], array_keys($modele));
-    egal(['', '', '', 'Amane', ''], array_values($modele));
-    egal(503, demander([], ['config' => $modele])['status']);
+    egal(CLES_CONFIG, array_keys($modele));
+    egal(
+        ['BREVO_API_KEY', 'LEAD_TO_EMAIL', 'LEAD_FROM_EMAIL', 'LEAD_FROM_NAME', 'ALLOWED_ORIGINS', 'CRM_URL', 'CRM_SECRET'],
+        array_keys($modele)
+    );
+    egal(['', '', '', 'Amane', '', '', ''], array_values($modele));
+    $r = demander([], ['config' => $modele]);
+    egal(503, $r['status']);
+    egal([], $r['journal'], 'lien CRM non demandé : rien à signaler');
 });
 
 // ---------------------------------------------------------------------------
@@ -1742,6 +1820,414 @@ test('dossier de données : créé au besoin, repli sur le dossier temporaire s�
 });
 
 // ---------------------------------------------------------------------------
+groupe('lien avec le CRM');
+
+/** Recalcule la signature comme le fait le CRM : HMAC-SHA256 de « <t>.<corps brut> », en hexadécimal. */
+function signatureAttendue(string $brut, int $t = T0, string $secret = CRM_SECRET): string
+{
+    return 't=' . $t . ',v1=' . hash_hmac('sha256', $t . '.' . $brut, $secret);
+}
+
+test('lien inactif (aucune clé) : aucun appel au CRM, rien ne change, rien au journal', function (): void {
+    foreach ([CONFIG, CONFIG + ['CRM_URL' => '', 'CRM_SECRET' => ''], CONFIG + ['CRM_URL' => '  ', 'CRM_SECRET' => ' ']] as $config) {
+        viderLimite();
+        $r = demander([], ['config' => $config]);
+        egal(200, $r['status']);
+        egal(['ok' => true, 'ack' => true], $r['json']);
+        egal(0, count($r['crm']));
+        egal(2, count($r['brevo']));
+        egal([], $r['journal']);
+    }
+});
+
+const SECRET_31 = 'secret-fictif-de-31-caracteres-';
+
+const LIENS_INVALIDES = [
+    'CRM_URL seule' => [['CRM_URL' => CRM_URL], 'CRM_SECRET manquant'],
+    'CRM_SECRET seul' => [['CRM_SECRET' => CRM_SECRET], 'CRM_URL manquante'],
+    'adresse en http://' => [
+        ['CRM_URL' => 'http://crm.amane.test', 'CRM_SECRET' => CRM_SECRET],
+        'CRM_URL invalide (elle doit commencer par https://)',
+    ],
+    'adresse sans https://' => [
+        ['CRM_URL' => 'crm.amane.test', 'CRM_SECRET' => CRM_SECRET],
+        'CRM_URL invalide (elle doit commencer par https://)',
+    ],
+    'adresse réduite à https://' => [
+        ['CRM_URL' => 'https://', 'CRM_SECRET' => CRM_SECRET],
+        'CRM_URL invalide (elle doit commencer par https://)',
+    ],
+    'adresse avec des paramètres' => [
+        ['CRM_URL' => 'https://crm.amane.test/?cle=valeur', 'CRM_SECRET' => CRM_SECRET],
+        'CRM_URL invalide (elle doit commencer par https://)',
+    ],
+    'secret de 31 caractères' => [
+        ['CRM_URL' => CRM_URL, 'CRM_SECRET' => SECRET_31],
+        'CRM_SECRET trop court (32 caractères minimum)',
+    ],
+    'adresse et secret invalides' => [
+        ['CRM_URL' => 'http://crm.amane.test', 'CRM_SECRET' => 'secret-trop-court'],
+        'CRM_URL invalide (elle doit commencer par https://) ; CRM_SECRET trop court (32 caractères minimum)',
+    ],
+];
+
+foreach (LIENS_INVALIDES as $cas => [$cles, $signalement]) {
+    test("lien inactif ($cas) : aucun appel au CRM, comportement inchangé, un signalement sans valeur", function () use ($cles, $signalement): void {
+        $r = demander([], ['config' => CONFIG + $cles]);
+        egal(200, $r['status']);
+        egal(['ok' => true, 'ack' => true], $r['json']);
+        egal(0, count($r['crm']));
+        egal(2, count($r['brevo']));
+        egal(['[lead] lien CRM inactif : ' . $signalement], $r['journal'], 'une seule ligne par demande');
+        foreach ([CRM_SECRET, SECRET_31, 'secret-trop-court', 'crm.amane.test', 'cle=valeur'] as $interdit) {
+            absent($r['journal'][0], $interdit, 'journal');
+        }
+
+        // E-mail à l'équipe en échec : 502, comme sans le lien.
+        viderLimite();
+        $echec = demander([], ['config' => CONFIG + $cles, 'http' => fauxReseau(brevo: [500])]);
+        egal(502, $echec['status']);
+        egal(['error' => 'envoi_impossible'], $echec['json']);
+        egal(0, count($echec['crm']));
+
+        // E-mail non configuré : 503, comme sans le lien, et sans entamer la limite de débit.
+        viderLimite();
+        $off = demander([], ['config' => ['LEAD_TO_EMAIL' => ''] + CONFIG + $cles]);
+        egal(503, $off['status']);
+        egal('email_off', $off['json']['error']);
+        egal(0, count($off['appels']) + count($off['mails']));
+        egal(['[lead] lien CRM inactif : ' . $signalement], $off['journal']);
+        egal([], glob(bilan()->dossier . '/*'), 'aucun compteur créé');
+    });
+}
+
+test('secret de 32 caractères exactement : lien actif ; la longueur se compte comme le fait le CRM', function (): void {
+    egal(31, strlen(SECRET_31));
+    $secret = SECRET_31 . 'y';
+    $r = demander([], ['config' => ['CRM_SECRET' => $secret] + CONFIG_CRM]);
+    egal(1, count($r['crm']));
+    egal(signatureAttendue($r['crm'][0]['brut'], T0, $secret), $r['crm'][0]['entetes']['X-Amane-Signature']);
+    egal([], $r['journal']);
+
+    // Vingt lettres accentuées : 40 octets, mais 20 caractères pour le CRM (JavaScript) → trop court.
+    viderLimite();
+    $r = demander([], ['config' => ['CRM_SECRET' => str_repeat('é', 20)] + CONFIG_CRM]);
+    egal(0, count($r['crm']));
+    egal(['[lead] lien CRM inactif : CRM_SECRET trop court (32 caractères minimum)'], $r['journal']);
+});
+
+test('lien actif : un seul appel à <CRM_URL>/api/lead, signé, avant les e-mails', function (): void {
+    $r = demander([], ['config' => CONFIG_CRM]);
+    egal(200, $r['status']);
+    egal(['ok' => true, 'ack' => true], $r['json']);
+    egal([], $r['journal']);
+
+    egal(1, count($r['crm']));
+    egal(2, count($r['brevo']));
+    egal(
+        ['https://crm.amane.test/api/lead', BREVO_URL, BREVO_URL],
+        array_column($r['appels'], 'url'),
+        'le CRM d’abord, puis les deux e-mails'
+    );
+
+    $appel = $r['crm'][0];
+    egal(
+        ['Content-Type' => 'application/json', 'X-Amane-Signature' => signatureAttendue($appel['brut'])],
+        $appel['entetes'],
+        'deux en-têtes, signature recalculée identique'
+    );
+    egal(1, preg_match('/^t=1800000000,v1=[0-9a-f]{64}$/D', $appel['entetes']['X-Amane-Signature']));
+    egal(5, $appel['delai'], 'délai maximal, en secondes');
+    // Les e-mails, eux, ne changent pas.
+    egal(CLE, $r['brevo'][0]['entetes']['api-key']);
+    faux(array_key_exists('X-Amane-Signature', $r['brevo'][0]['entetes']));
+});
+
+test('corps envoyé au CRM : exactement les huit champs, langue en majuscules, ni IP ni champ piège', function (): void {
+    $r = demander(
+        ['a_laisser_vide' => '  ', 'website' => 'https://exemple-du-client.fr', 'bcc' => 'pirate@example.com'],
+        ['config' => CONFIG_CRM, 'ip' => '203.0.113.77']
+    );
+    $appel = $r['crm'][0];
+    egal([
+        'nom' => 'Jeanne Martin',
+        'tel' => '+33 6 12 34 56 78',
+        'email' => 'jeanne.martin@example.com',
+        'langue' => 'FR',
+        'service' => 'chauffeur',
+        'date' => '2026-12-12',
+        'passagers' => '2',
+        'message' => "Un transfert depuis Roissy.\nMerci.",
+    ], $appel['corps']);
+    // À l'octet près, le même JSON que la version JavaScript.
+    egal(
+        '{"nom":"Jeanne Martin","tel":"+33 6 12 34 56 78","email":"jeanne.martin@example.com","langue":"FR",'
+            . '"service":"chauffeur","date":"2026-12-12","passagers":"2","message":"Un transfert depuis Roissy.\nMerci."}',
+        $appel['brut']
+    );
+    foreach (['203.0.113', 'a_laisser_vide', 'website', 'exemple-du-client', 'pirate@example.com'] as $interdit) {
+        absent($appel['brut'], $interdit);
+    }
+});
+
+test('le corps signé est exactement celui qui est envoyé : UTF-8, sans échappement inutile', function (): void {
+    $r = demander(
+        ['nom' => 'Zoé Lefèvre', 'message' => 'Voir https://exemple.fr/séjour — dire "bonjour" \\ à محمد 😀'],
+        ['config' => CONFIG_CRM]
+    );
+    $appel = $r['crm'][0];
+    egal(
+        '{"nom":"Zoé Lefèvre","tel":"+33 6 12 34 56 78","email":"jeanne.martin@example.com","langue":"FR",'
+            . '"service":"chauffeur","date":"2026-12-12","passagers":"2",'
+            . '"message":"Voir https://exemple.fr/séjour — dire \"bonjour\" \\\\ à محمد 😀"}',
+        $appel['brut']
+    );
+    absent($appel['brut'], '\\u00e9');
+    absent($appel['brut'], '\\/');
+    egal(signatureAttendue($appel['brut']), $appel['entetes']['X-Amane-Signature']);
+    // Un octet de plus ou un autre secret, et la signature ne vaut plus rien.
+    vrai(signatureAttendue($appel['brut'] . ' ') !== $appel['entetes']['X-Amane-Signature']);
+    vrai(signatureAttendue($appel['brut'], T0, CRM_SECRET . 'x') !== $appel['entetes']['X-Amane-Signature']);
+});
+
+test('valeurs envoyées au CRM : celles de nettoyerDemande, rien de brut', function (): void {
+    foreach (['fr' => 'FR', 'en' => 'EN', 'es' => 'ES', 'ar' => 'AR', ' Ar ' => 'AR', 'es-ES' => 'ES', 'de' => 'FR', '' => 'FR'] as $saisie => $attendue) {
+        viderLimite();
+        $r = demander(['langue' => $saisie], ['config' => CONFIG_CRM]);
+        egal($attendue, $r['crm'][0]['corps']['langue'], "« $saisie »");
+    }
+
+    viderLimite();
+    $r = demander([
+        'nom' => "  Jean\r\nDupont  ",
+        'email' => '',
+        'tel' => '06 12 34 56 78',
+        'service' => 'Location de yacht',
+        'date' => '12/12/2026',
+        'passagers' => 8,
+        'message' => "  Bonjour\x00\r\n\r\n\r\n\r\nà vous  ",
+    ], ['config' => CONFIG_CRM]);
+    egal([
+        'nom' => 'Jean Dupont',
+        'tel' => '06 12 34 56 78',
+        'email' => '',
+        'langue' => 'FR',
+        'service' => 'autre',
+        'date' => '',
+        'passagers' => '',
+        'message' => "Bonjour\n\nà vous",
+    ], $r['crm'][0]['corps']);
+
+    viderLimite();
+    $r = demander(['service' => ' Van ', 'passagers' => '8+', 'date' => ' 2028-02-29 '], ['config' => CONFIG_CRM]);
+    egal(['van', '8+', '2028-02-29'], [$r['crm'][0]['corps']['service'], $r['crm'][0]['corps']['passagers'], $r['crm'][0]['corps']['date']]);
+    viderLimite();
+    $r = demander(['passagers' => 5], ['config' => CONFIG_CRM]);
+    egal('5', $r['crm'][0]['corps']['passagers'], 'toujours une chaîne');
+});
+
+test('barre finale de CRM_URL retirée', function (): void {
+    $cas = [
+        'https://crm.amane.test/' => 'https://crm.amane.test/api/lead',
+        'https://crm.amane.test//' => 'https://crm.amane.test/api/lead',
+        ' https://crm.amane.test/ ' => 'https://crm.amane.test/api/lead',
+        'https://crm.amane.test/crm/' => 'https://crm.amane.test/crm/api/lead',
+    ];
+    foreach ($cas as $url => $attendue) {
+        viderLimite();
+        $r = demander([], ['config' => ['CRM_URL' => $url] + CONFIG_CRM]);
+        egal(1, count($r['crm']), $url);
+        egal($attendue, $r['crm'][0]['url'], $url);
+        egal([], $r['journal']);
+    }
+});
+
+test('horodatage de la signature : l’horloge de la demande, en secondes', function (): void {
+    $r = demander([], ['config' => CONFIG_CRM, 'now' => T0 + 1234]);
+    $signature = $r['crm'][0]['entetes']['X-Amane-Signature'];
+    vrai(str_starts_with($signature, 't=' . (T0 + 1234) . ',v1='));
+    egal(signatureAttendue($r['crm'][0]['brut'], T0 + 1234), $signature);
+});
+
+test('e-mail envoyé, CRM en succès → 200 ack:true', function (): void {
+    $r = demander([], ['config' => CONFIG_CRM, 'http' => fauxReseau(crm: [200], brevo: [201, 201])]);
+    egal(200, $r['status']);
+    egal(['ok' => true, 'ack' => true], $r['json']);
+    egal([1, 2], [count($r['crm']), count($r['brevo'])]);
+    egal([], $r['journal']);
+});
+
+test('e-mail envoyé, CRM en échec → 200 comme sans le lien, l’échec est seulement journalisé', function (): void {
+    $r = demander([], ['config' => CONFIG_CRM, 'http' => fauxReseau(crm: [500])]);
+    egal(200, $r['status']);
+    egal(['ok' => true, 'ack' => true], $r['json']);
+    egal([1, 2], [count($r['crm']), count($r['brevo'])]);
+    egal(['[lead] CRM : HTTP 500'], $r['journal']);
+
+    // Téléphone seul : ack:false comme sans le lien, que le CRM ait répondu ou non.
+    viderLimite();
+    $r = demander(['email' => ''], ['config' => CONFIG_CRM, 'http' => fauxReseau(crm: [500])]);
+    egal(['ok' => true, 'ack' => false], $r['json']);
+    egal([1, 1], [count($r['crm']), count($r['brevo'])]);
+});
+
+test('e-mail à l’équipe en échec, CRM en succès → 200 ack:false, sans tenter l’accusé', function (): void {
+    $r = demander([], ['config' => CONFIG_CRM, 'http' => fauxReseau(brevo: [401])]);
+    egal(200, $r['status']);
+    egal(['ok' => true, 'ack' => false], $r['json']);
+    egal([], $r['headers']);
+    egal([1, 1], [count($r['crm']), count($r['brevo'])], 'un seul e-mail tenté : pas d’accusé');
+    egal(1, count($r['journal']));
+    contient($r['journal'][0], '« équipe » : HTTP 401');
+});
+
+test('e-mail à l’équipe en échec, CRM en échec → 502 envoi_impossible', function (): void {
+    $r = demander([], ['config' => CONFIG_CRM, 'http' => fauxReseau(crm: [500], brevo: [500])]);
+    egal(502, $r['status']);
+    egal(['error' => 'envoi_impossible'], $r['json']);
+    egal([1, 1], [count($r['crm']), count($r['brevo'])]);
+    egal(2, count($r['journal']));
+    egal('[lead] CRM : HTTP 500', $r['journal'][0]);
+});
+
+test('accusé de réception en échec, CRM en succès → 200 ack:false', function (): void {
+    $r = demander([], ['config' => CONFIG_CRM, 'http' => fauxReseau(brevo: [201, 400])]);
+    egal(200, $r['status']);
+    egal(['ok' => true, 'ack' => false], $r['json']);
+    egal([1, 2], [count($r['crm']), count($r['brevo'])]);
+});
+
+test('tout code 2xx du CRM est un succès, tout autre un échec', function (): void {
+    foreach ([200, 201, 204, 299] as $code) {
+        viderLimite();
+        $r = demander([], ['config' => CONFIG_CRM, 'http' => fauxReseau(crm: [$code], brevo: [500])]);
+        egal(['ok' => true, 'ack' => false], $r['json'], (string) $code);
+    }
+    foreach ([199, 300, 301, 404] as $code) {
+        viderLimite();
+        $r = demander([], ['config' => CONFIG_CRM, 'http' => fauxReseau(crm: [$code], brevo: [500])]);
+        egal(502, $r['status'], (string) $code);
+    }
+});
+
+foreach (['LEAD_TO_EMAIL', 'LEAD_FROM_EMAIL'] as $manquante) {
+    test("e-mail non configuré (sans $manquante), CRM actif : la demande part au CRM seul", function () use ($manquante): void {
+        $config = [$manquante => ''] + CONFIG_CRM;
+
+        $r = demander([], ['config' => $config]);
+        egal(200, $r['status']);
+        egal(['ok' => true, 'ack' => false], $r['json']);
+        egal(1, count($r['crm']));
+        egal(0, count($r['brevo']) + count($r['mails']), 'aucun e-mail');
+        egal(signatureAttendue($r['crm'][0]['brut']), $r['crm'][0]['entetes']['X-Amane-Signature']);
+        egal([], $r['journal']);
+
+        viderLimite();
+        $r = demander([], ['config' => $config, 'http' => fauxReseau(crm: [500])]);
+        egal(502, $r['status']);
+        egal(['error' => 'envoi_impossible'], $r['json']);
+        egal(1, count($r['crm']));
+        egal(0, count($r['brevo']) + count($r['mails']));
+        egal(['[lead] CRM : HTTP 500'], $r['journal']);
+    });
+}
+
+test('e-mail non configuré, CRM actif : la limite de débit s’applique aussi', function (): void {
+    $config = ['LEAD_TO_EMAIL' => ''] + CONFIG_CRM;
+    for ($i = 1; $i <= 5; $i++) {
+        egal(200, demander([], ['config' => $config, 'now' => T0 + $i])['status']);
+    }
+    $r = demander([], ['config' => $config, 'now' => T0 + 6]);
+    egal(429, $r['status']);
+    egal(0, count($r['appels']));
+});
+
+test('envoi par mail() : le CRM d’abord, puis les deux e-mails ; mail() en panne et CRM en succès → 200 ack:false', function (): void {
+    $config = CONFIG_MAIL + ['CRM_URL' => CRM_URL, 'CRM_SECRET' => CRM_SECRET];
+    $r = demander([], ['config' => $config]);
+    egal(['ok' => true, 'ack' => true], $r['json']);
+    egal([1, 0, 2], [count($r['crm']), count($r['brevo']), count($r['mails'])]);
+
+    viderLimite();
+    $r = demander([], ['config' => $config, 'mail' => fauxMail(false)]);
+    egal(200, $r['status']);
+    egal(['ok' => true, 'ack' => false], $r['json']);
+    egal([1, 1], [count($r['crm']), count($r['mails'])], 'pas d’accusé');
+
+    viderLimite();
+    $r = demander([], ['config' => $config, 'mail' => fauxMail(false), 'http' => fauxReseau(crm: [-28])]);
+    egal(502, $r['status']);
+    egal(['[lead] CRM injoignable : délai dépassé', "[lead] mail() a refusé l'e-mail « équipe »"], $r['journal']);
+});
+
+test('CRM qui refuse (403), en panne (500), qui redirige, dépasse le délai ou reste injoignable : journal sans secret ni contenu', function (): void {
+    $cas = [
+        [403, '[lead] CRM : HTTP 403'],
+        [500, '[lead] CRM : HTTP 500'],
+        [301, '[lead] CRM : HTTP 301'],
+        [-28, '[lead] CRM injoignable : délai dépassé'],
+        [-7, '[lead] CRM injoignable : erreur réseau'],
+        [0, '[lead] CRM injoignable : erreur réseau'],
+        [
+            new \RuntimeException('boum ' . CRM_SECRET . ' SECRET-DU-CLIENT https://crm.amane.test/api/lead'),
+            '[lead] CRM injoignable : erreur réseau',
+        ],
+    ];
+    foreach ($cas as [$reponse, $ligne]) {
+        viderLimite();
+        $r = demander(
+            ['message' => 'SECRET-DU-CLIENT'],
+            ['config' => CONFIG_CRM, 'http' => fauxReseau(crm: [$reponse])]
+        );
+        egal(200, $r['status'], $ligne);
+        egal(['ok' => true, 'ack' => true], $r['json'], 'l’e-mail est parti : la demande n’est pas perdue');
+        egal([$ligne], $r['journal']);
+        foreach (
+            [
+                CRM_SECRET,
+                'SECRET-DU-CLIENT',
+                'crm.amane.test',
+                'https://',
+                'jeanne.martin@example.com',
+                'Jeanne',
+                '+33 6 12',
+                '203.0.113',
+            ] as $interdit
+        ) {
+            absent($r['journal'][0], $interdit, 'journal');
+        }
+    }
+});
+
+test('le piège à robots, une demande invalide, une origine refusée et la limite de débit n’appellent pas le CRM', function (): void {
+    $cas = [
+        [['a_laisser_vide' => 'robot'], [], 200],
+        [['email' => 'invalide'], [], 400],
+        [['email' => '', 'tel' => ''], [], 400],
+        [['tel' => '12'], [], 400],
+        [[], ['body' => '{nom:'], 400],
+        [[], ['origin' => 'https://pirate.example'], 403],
+    ];
+    foreach ($cas as [$surcharge, $options, $status]) {
+        $r = demander($surcharge, $options + ['config' => CONFIG_CRM]);
+        egal($status, $r['status'], montrer([$surcharge, $options]));
+        egal(0, count($r['appels']) + count($r['mails']));
+    }
+    egal([], glob(bilan()->dossier . '/*'), 'aucun compteur créé');
+
+    // Cinq demandes passent, avec un appel au CRM chacune ; la sixième est arrêtée avant le CRM.
+    for ($i = 1; $i <= 5; $i++) {
+        $r = demander([], ['config' => CONFIG_CRM, 'ip' => '198.51.100.60', 'now' => T0 + $i]);
+        egal(200, $r['status'], "appel $i");
+        egal(1, count($r['crm']));
+    }
+    $sixieme = demander([], ['config' => CONFIG_CRM, 'ip' => '198.51.100.60', 'now' => T0 + 6]);
+    egal(429, $sixieme['status']);
+    egal(['error' => 'trop_de_demandes'], $sixieme['json']);
+    egal(0, count($sixieme['appels']));
+});
+
+// ---------------------------------------------------------------------------
 groupe('adresse IP du visiteur');
 
 test('REMOTE_ADDR publique : utilisée telle quelle, X-Forwarded-For ignoré', function (): void {
@@ -1775,7 +2261,7 @@ groupe('requête HTTP');
  *
  * @param array<string, mixed> $serveur
  * @param array<string, mixed> $options
- * @return array{status: int, json: array<string, mixed>, headers: array<string, string>, appels: array, mails: array, journal: list<string>}
+ * @return array{status: int, json: array<string, mixed>, headers: array<string, string>, appels: array, brevo: array, crm: array, mails: array, journal: list<string>}
  */
 function requete(array $serveur = [], mixed $corps = null, array $options = []): array
 {
@@ -1806,6 +2292,8 @@ function requete(array $serveur = [], mixed $corps = null, array $options = []):
         'json' => $json,
         'headers' => $headers,
         'appels' => $http->appels,
+        'brevo' => appelsVers($http->appels, true),
+        'crm' => appelsVers($http->appels, false),
         'mails' => $mail->appels,
         'journal' => $journal->getArrayCopy(),
     ];
@@ -1920,6 +2408,17 @@ test('POST : limite par IP lue dans REMOTE_ADDR, avec Retry-After', function ():
     egal(200, requete(['REMOTE_ADDR' => '192.0.2.100'], $corps)['status']);
     // Changer X-Forwarded-For ne permet pas d'échapper à la limite.
     egal(429, requete(['REMOTE_ADDR' => '192.0.2.99', 'HTTP_X_FORWARDED_FOR' => '8.8.8.8'], $corps)['status']);
+});
+
+test('POST : lien CRM actif → la demande part au CRM puis par e-mail, sans l’adresse IP du visiteur', function (): void {
+    $r = requete(['REMOTE_ADDR' => '192.0.2.55'], flux((string) json_encode(DEMANDE)), ['config' => CONFIG_CRM]);
+    egal(200, $r['status']);
+    egal(['ok' => true, 'ack' => true], $r['json']);
+    egal([1, 2], [count($r['crm']), count($r['brevo'])]);
+    egal('https://crm.amane.test/api/lead', $r['crm'][0]['url']);
+    egal(signatureAttendue($r['crm'][0]['brut']), $r['crm'][0]['entetes']['X-Amane-Signature']);
+    absent($r['crm'][0]['brut'], '192.0.2');
+    egal([], $r['journal']);
 });
 
 test('erreur inattendue → 500 erreur_interne, sans détail dans le journal', function (): void {

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import type { Dict } from '../i18n';
+import type { Dict, Lang } from '../i18n';
 import { REALISATIONS, type Realisation } from '../realisations';
 import { asset } from '../config';
 import { Title, reducedMotion, smooth } from '../ui';
@@ -9,9 +9,11 @@ import { Title, reducedMotion, smooth } from '../ui';
  * Un film se lance au survol de sa tuile ; un site se présente dans une fenêtre de navigateur.
  * La liste est dans src/realisations.ts.
  */
-export function Realisations({ d }: { d: Dict }) {
+export function Realisations({ d, lang }: { d: Dict; lang: Lang }) {
   const [filtre, setFiltre] = useState(-1);
   const [ouverte, setOuverte] = useState(-1);
+  /** La tuile dont les bulles sont dépliées au doigt ou au clavier (au survol, le CSS suffit). */
+  const [bulles, setBulles] = useState('');
   const visibles = REALISATIONS.filter((r) => filtre < 0 || r.kind === filtre);
   const dialog = useRef<HTMLDialogElement>(null);
   /** La grille est arrivée à l'écran : ses tuiles se dévoilent l'une après l'autre. */
@@ -80,16 +82,26 @@ export function Realisations({ d }: { d: Dict }) {
           {visibles.map((r, i) => (
             <li
               key={r.id}
-              className={`oeuvre ${r.format}`}
+              className={`oeuvre ${r.format}${bulles === r.id ? ' bulles-on' : ''}`}
               style={{ viewTransitionName: `oeuvre-${r.id}`, '--k': i } as CSSProperties}
             >
-              <button type="button" onClick={() => setOuverte(i)} aria-haspopup="dialog">
+              <button type="button" className="oeuvre__ouvrir" onClick={() => setOuverte(i)} aria-haspopup="dialog">
                 <Tuile r={r} />
                 <span className="oeuvre__nom">
                   <small>{d.wKinds[r.kind]}</small>
                   <b>{r.title}</b>
                 </span>
               </button>
+              <button
+                type="button"
+                className="oeuvre__plus"
+                aria-label={`${d.wMore} — ${r.title}`}
+                aria-expanded={bulles === r.id}
+                onClick={() => setBulles((b) => (b === r.id ? '' : r.id))}
+              >
+                <i aria-hidden="true" />
+              </button>
+              <Bulles r={r} d={d} />
             </li>
           ))}
         </ul>
@@ -118,13 +130,10 @@ export function Realisations({ d }: { d: Dict }) {
               )}
             </div>
             <figcaption>
-              <small>
-                {d.wKinds[vue.kind]} · {vue.year}
-              </small>
+              <small>{d.wKinds[vue.kind]}</small>
               <b>{vue.title}</b>
-              <span>
-                {d.wFor} {vue.client}
-              </span>
+              {vue.note && <p>{vue.note[lang] ?? vue.note.fr}</p>}
+              <Bulles r={vue} d={d} />
               {vue.href && (
                 <a className="link" href={vue.href} target="_blank" rel="noopener">
                   {d.wVisit}
@@ -149,6 +158,25 @@ export function Realisations({ d }: { d: Dict }) {
         </button>
       </dialog>
     </section>
+  );
+}
+
+/** Les petites bulles d'une réalisation : pour qui, avec qui, ce que la maison a fait, l'année. */
+function Bulles({ r, d }: { r: Realisation; d: Dict }) {
+  const items = [
+    `${d.wFor} ${r.client}`,
+    ...(r.avec ?? []).map((nom) => `${d.wWith} ${nom}`),
+    ...r.roles.map((k) => d.wRoles[k] ?? k),
+    r.year,
+  ];
+  return (
+    <ul className="bulles">
+      {items.map((t, b) => (
+        <li key={t} style={{ '--b': b } as CSSProperties}>
+          {t}
+        </li>
+      ))}
+    </ul>
   );
 }
 

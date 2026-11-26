@@ -3,6 +3,7 @@
 
 import { test, describe, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
+import { createHmac } from 'node:crypto';
 import { Readable } from 'node:stream';
 
 import handler from '../../api/lead.js';
@@ -15,6 +16,10 @@ const ENV = {
   LEAD_TO_EMAIL: 'equipe@amane.test',
   LEAD_FROM_EMAIL: 'bonjour@amane.test',
 };
+// Lien CRM actif : adresse et secret fictifs (le secret fait plus de 32 caractères).
+const CRM_URL = 'https://crm.amane.test';
+const CRM_SECRET = 'secret-fictif-pour-les-tests-0123456789';
+const ENV_CRM = { ...ENV, CRM_URL, CRM_SECRET };
 const DEMANDE = {
   nom: 'Jeanne Martin',
   email: 'jeanne.martin@example.com',
@@ -938,6 +943,477 @@ describe('limite de débit', () => {
 });
 
 // ---------------------------------------------------------------------------
+describe('lien avec le CRM', () => {
+  const versCrm = (appels) => appels.filter((appel) => appel.url !== BREVO_URL);
+  const versBrevo = (appels) => appels.filter((appel) => appel.url === BREVO_URL);
+  const T0 = 1_800_000_000; // l'horloge des tests, en secondes
+
+  /** Recalcule la signature comme le fait le CRM : HMAC-SHA256 de « <t>.<corps brut> », en hexadécimal. */
+  function signatureAttendue(brut, t = T0, secret = CRM_SECRET) {
+    return `t=${t},v1=${createHmac('sha256', secret).update(`${t}.${brut}`).digest('hex')}`;
+  }
+
+  /**
+   * Faux fetch qui distingue le CRM de Brevo par l'adresse appelée : à chacun sa
+   * suite de réponses (un code HTTP, ou une erreur à lever). Par défaut : 200
+   * pour le CRM, 201 pour Brevo. Tous les appels sont enregistrés, dans l'ordre.
+   */
+  function fauxReseau({ crm = [], brevo = [] } = {}) {
+    const appels = [];
+    const suites = { crm: [...crm], brevo: [...brevo] };
+    const fetchImpl = async (url, options) => {
+      const vers = url === BREVO_URL ? 'brevo' : 'crm';
+      appels.push({ url, options, corps: JSON.parse(options.body) });
+      const r = suites[vers].shift() ?? (vers === 'crm' ? 200 : 201);
+      if (r instanceof Error) throw r;
+      // Response n'accepte que les codes 200 à 599, et pas de corps pour un 204.
+      if (r < 200) return { status: r };
+      return new Response(r === 204 ? null : JSON.stringify({ ok: true }), { status: r });
+    };
+    return { fetchImpl, appels };
+  }
+
+  test('lien inactif (aucune clé) : aucun appel au CRM, rien ne change, rien au journal', async (t) => {
+    const erreurs = capterErreurs(t);
+    const alertes = capterAlertes(t);
+    for (const env of [ENV, { ...ENV, CRM_URL: '', CRM_SECRET: '' }, { ...ENV, CRM_URL: '  ', CRM_SECRET: ' ' }]) {
+      _viderLimite();
+      const r = await envoyer({}, { env });
+      assert.equal(r.status, 200);
+      assert.deepEqual(r.json, { ok: true, ack: true });
+      assert.equal(versCrm(r.appels).length, 0);
+      assert.equal(versBrevo(r.appels).length, 2);
+    }
+    assert.deepEqual([...erreurs, ...alertes], []);
+  });
+
+  const SECRET_31 = 'secret-fictif-de-31-caracteres-';
+
+  const LIENS_INVALIDES = {
+    'CRM_URL seule': [{ CRM_URL }, 'CRM_SECRET manquant'],
+    'CRM_SECRET seul': [{ CRM_SECRET }, 'CRM_URL manquante'],
+    'adresse en http://': [
+      { CRM_URL: 'http://crm.amane.test', CRM_SECRET },
+      'CRM_URL invalide (elle doit commencer par https://)',
+    ],
+    'adresse sans https://': [
+      { CRM_URL: 'crm.amane.test', CRM_SECRET },
+      'CRM_URL invalide (elle doit commencer par https://)',
+    ],
+    'adresse réduite à https://': [
+      { CRM_URL: 'https://', CRM_SECRET },
+      'CRM_URL invalide (elle doit commencer par https://)',
+    ],
+    'adresse avec des paramètres': [
+      { CRM_URL: 'https://crm.amane.test/?cle=valeur', CRM_SECRET },
+      'CRM_URL invalide (elle doit commencer par https://)',
+    ],
+    'secret de 31 caractères': [{ CRM_URL, CRM_SECRET: SECRET_31 }, 'CRM_SECRET trop court (32 caractères minimum)'],
+    'adresse et secret invalides': [
+      { CRM_URL: 'http://crm.amane.test', CRM_SECRET: 'secret-trop-court' },
+      'CRM_URL invalide (elle doit commencer par https://) ; CRM_SECRET trop court (32 caractères minimum)',
+    ],
+  };
+
+  for (const [cas, [cles, signalement]] of Object.entries(LIENS_INVALIDES)) {
+    test(`lien inactif (${cas}) : aucun appel au CRM, comportement inchangé, un signalement sans valeur`, async (t) => {
+      const erreurs = capterErreurs(t);
+      const alertes = capterAlertes(t);
+      const r = await envoyer({}, { env: { ...ENV, ...cles } });
+      assert.equal(r.status, 200);
+      assert.deepEqual(r.json, { ok: true, ack: true });
+      assert.equal(versCrm(r.appels).length, 0);
+      assert.equal(versBrevo(r.appels).length, 2);
+      assert.deepEqual(alertes, [`[lead] lien CRM inactif : ${signalement}`], 'une seule ligne par demande');
+      assert.deepEqual(erreurs, []);
+      for (const interdit of [CRM_SECRET, SECRET_31, 'secret-trop-court', 'crm.amane.test', 'cle=valeur']) {
+        assert.ok(!alertes[0].includes(interdit), `le journal ne doit pas contenir « ${interdit} »`);
+      }
+
+      // E-mail à l'équipe en échec : 502, comme sans le lien.
+      _viderLimite();
+      const echec = await envoyer({}, { env: { ...ENV, ...cles }, fetch: fauxReseau({ brevo: [500] }) });
+      assert.equal(echec.status, 502);
+      assert.deepEqual(echec.json, { error: 'envoi_impossible' });
+      assert.equal(versCrm(echec.appels).length, 0);
+
+      // E-mail non configuré : 503, comme sans le lien, et sans entamer la limite de débit.
+      _viderLimite();
+      alertes.length = 0;
+      for (let i = 0; i < 6; i++) {
+        const off = await envoyer({}, { env: { ...ENV, ...cles, LEAD_TO_EMAIL: '' } });
+        assert.equal(off.status, 503);
+        assert.equal(off.json.error, 'email_off');
+        assert.equal(off.appels.length, 0);
+      }
+      assert.deepEqual(alertes, Array(6).fill(`[lead] lien CRM inactif : ${signalement}`));
+    });
+  }
+
+  test('secret de 32 caractères exactement : lien actif ; la longueur se compte comme le fait le CRM', async (t) => {
+    const alertes = capterAlertes(t);
+    assert.equal(SECRET_31.length, 31);
+    const secret = SECRET_31 + 'y';
+    const r = await envoyer({}, { env: { ...ENV_CRM, CRM_SECRET: secret } });
+    const [appel] = versCrm(r.appels);
+    assert.equal(versCrm(r.appels).length, 1);
+    assert.equal(appel.options.headers['X-Amane-Signature'], signatureAttendue(appel.options.body, T0, secret));
+    assert.deepEqual(alertes, []);
+
+    // Vingt lettres accentuées : 40 octets, mais 20 caractères pour le CRM (JavaScript) → trop court.
+    _viderLimite();
+    const court = await envoyer({}, { env: { ...ENV_CRM, CRM_SECRET: 'é'.repeat(20) } });
+    assert.equal(versCrm(court.appels).length, 0);
+    assert.deepEqual(alertes, ['[lead] lien CRM inactif : CRM_SECRET trop court (32 caractères minimum)']);
+  });
+
+  test('lien actif : un seul appel à <CRM_URL>/api/lead, signé, avant les e-mails', async (t) => {
+    const erreurs = capterErreurs(t);
+    const alertes = capterAlertes(t);
+    const delais = [];
+    const delaiReel = AbortSignal.timeout.bind(AbortSignal);
+    t.mock.method(AbortSignal, 'timeout', (ms) => (delais.push(ms), delaiReel(ms)));
+
+    const r = await envoyer({}, { env: ENV_CRM });
+    assert.equal(r.status, 200);
+    assert.deepEqual(r.json, { ok: true, ack: true });
+    assert.deepEqual([...erreurs, ...alertes], []);
+
+    assert.equal(versCrm(r.appels).length, 1);
+    assert.equal(versBrevo(r.appels).length, 2);
+    assert.deepEqual(
+      r.appels.map((appel) => appel.url),
+      ['https://crm.amane.test/api/lead', BREVO_URL, BREVO_URL],
+      'le CRM d’abord, puis les deux e-mails',
+    );
+
+    const [appel] = versCrm(r.appels);
+    assert.equal(appel.options.method, 'POST');
+    assert.equal(typeof appel.options.body, 'string');
+    assert.deepEqual(
+      appel.options.headers,
+      { 'Content-Type': 'application/json', 'X-Amane-Signature': signatureAttendue(appel.options.body) },
+      'deux en-têtes, signature recalculée identique',
+    );
+    assert.match(appel.options.headers['X-Amane-Signature'], /^t=1800000000,v1=[0-9a-f]{64}$/);
+    assert.equal(appel.options.redirect, 'manual', 'une redirection n’est pas suivie');
+    assert.ok(appel.options.signal instanceof AbortSignal, 'délai maximal');
+    assert.deepEqual(delais, [5000, 8000, 8000], 'délai maximal, en millisecondes : 5 s pour le CRM');
+    // Les e-mails, eux, ne changent pas.
+    assert.equal(versBrevo(r.appels)[0].options.headers['api-key'], CLE);
+    assert.equal('X-Amane-Signature' in versBrevo(r.appels)[0].options.headers, false);
+  });
+
+  test('corps envoyé au CRM : exactement les huit champs, langue en majuscules, ni IP ni champ piège', async () => {
+    const r = await envoyer(
+      { a_laisser_vide: '  ', website: 'https://exemple-du-client.fr', bcc: 'pirate@example.com' },
+      { env: ENV_CRM, ip: '203.0.113.77' },
+    );
+    const [appel] = versCrm(r.appels);
+    assert.deepEqual(appel.corps, {
+      nom: 'Jeanne Martin',
+      tel: '+33 6 12 34 56 78',
+      email: 'jeanne.martin@example.com',
+      langue: 'FR',
+      service: 'chauffeur',
+      date: '2026-12-12',
+      passagers: '2',
+      message: 'Un transfert depuis Roissy.\nMerci.',
+    });
+    // À l'octet près, le même JSON que la version PHP.
+    assert.equal(
+      appel.options.body,
+      '{"nom":"Jeanne Martin","tel":"+33 6 12 34 56 78","email":"jeanne.martin@example.com","langue":"FR",' +
+        '"service":"chauffeur","date":"2026-12-12","passagers":"2","message":"Un transfert depuis Roissy.\\nMerci."}',
+    );
+    for (const interdit of ['203.0.113', 'a_laisser_vide', 'website', 'exemple-du-client', 'pirate@example.com']) {
+      assert.ok(!appel.options.body.includes(interdit), interdit);
+    }
+  });
+
+  test('le corps signé est exactement celui qui est envoyé : UTF-8, sans échappement inutile', async () => {
+    const r = await envoyer(
+      { nom: 'Zoé Lefèvre', message: 'Voir https://exemple.fr/séjour — dire "bonjour" \\ à محمد 😀' },
+      { env: ENV_CRM },
+    );
+    const [appel] = versCrm(r.appels);
+    const brut = appel.options.body;
+    assert.equal(
+      brut,
+      '{"nom":"Zoé Lefèvre","tel":"+33 6 12 34 56 78","email":"jeanne.martin@example.com","langue":"FR",' +
+        '"service":"chauffeur","date":"2026-12-12","passagers":"2",' +
+        '"message":"Voir https://exemple.fr/séjour — dire \\"bonjour\\" \\\\ à محمد 😀"}',
+    );
+    assert.ok(!brut.includes('\\u00e9'));
+    assert.ok(!brut.includes('\\/'));
+    assert.equal(appel.options.headers['X-Amane-Signature'], signatureAttendue(brut));
+    // Un octet de plus ou un autre secret, et la signature ne vaut plus rien.
+    assert.notEqual(appel.options.headers['X-Amane-Signature'], signatureAttendue(brut + ' '));
+    assert.notEqual(appel.options.headers['X-Amane-Signature'], signatureAttendue(brut, T0, CRM_SECRET + 'x'));
+  });
+
+  test('valeurs envoyées au CRM : celles de nettoyerDemande, rien de brut', async () => {
+    const langues = { fr: 'FR', en: 'EN', es: 'ES', ar: 'AR', ' Ar ': 'AR', 'es-ES': 'ES', de: 'FR', '': 'FR' };
+    for (const [saisie, attendue] of Object.entries(langues)) {
+      _viderLimite();
+      const r = await envoyer({ langue: saisie }, { env: ENV_CRM });
+      assert.equal(versCrm(r.appels)[0].corps.langue, attendue, `« ${saisie} »`);
+    }
+
+    _viderLimite();
+    const brute = await envoyer(
+      {
+        nom: '  Jean\r\nDupont  ',
+        email: '',
+        tel: '06 12 34 56 78',
+        service: 'Location de yacht',
+        date: '12/12/2026',
+        passagers: 8,
+        message: '  Bonjour\u0000\r\n\r\n\r\n\r\nà vous  ',
+      },
+      { env: ENV_CRM },
+    );
+    assert.deepEqual(versCrm(brute.appels)[0].corps, {
+      nom: 'Jean Dupont',
+      tel: '06 12 34 56 78',
+      email: '',
+      langue: 'FR',
+      service: 'autre',
+      date: '',
+      passagers: '',
+      message: 'Bonjour\n\nà vous',
+    });
+
+    _viderLimite();
+    const propre = await envoyer({ service: ' Van ', passagers: '8+', date: ' 2028-02-29 ' }, { env: ENV_CRM });
+    const { service, passagers, date } = versCrm(propre.appels)[0].corps;
+    assert.deepEqual([service, passagers, date], ['van', '8+', '2028-02-29']);
+    _viderLimite();
+    const nombre = await envoyer({ passagers: 5 }, { env: ENV_CRM });
+    assert.equal(versCrm(nombre.appels)[0].corps.passagers, '5', 'toujours une chaîne');
+  });
+
+  test('barre finale de CRM_URL retirée', async (t) => {
+    const alertes = capterAlertes(t);
+    const cas = {
+      'https://crm.amane.test/': 'https://crm.amane.test/api/lead',
+      'https://crm.amane.test//': 'https://crm.amane.test/api/lead',
+      ' https://crm.amane.test/ ': 'https://crm.amane.test/api/lead',
+      'https://crm.amane.test/crm/': 'https://crm.amane.test/crm/api/lead',
+    };
+    for (const [url, attendue] of Object.entries(cas)) {
+      _viderLimite();
+      const r = await envoyer({}, { env: { ...ENV_CRM, CRM_URL: url } });
+      assert.equal(versCrm(r.appels).length, 1, url);
+      assert.equal(versCrm(r.appels)[0].url, attendue, url);
+    }
+    assert.deepEqual(alertes, []);
+  });
+
+  test('horodatage de la signature : l’horloge de la demande, en secondes', async () => {
+    const r = await envoyer({}, { env: ENV_CRM, now: (T0 + 1234) * 1000 + 999 });
+    const [appel] = versCrm(r.appels);
+    const signature = appel.options.headers['X-Amane-Signature'];
+    assert.ok(signature.startsWith(`t=${T0 + 1234},v1=`));
+    assert.equal(signature, signatureAttendue(appel.options.body, T0 + 1234));
+  });
+
+  test('e-mail envoyé, CRM en succès → 200 ack:true', async (t) => {
+    const journal = capterErreurs(t);
+    const r = await envoyer({}, { env: ENV_CRM, fetch: fauxReseau({ crm: [200], brevo: [201, 201] }) });
+    assert.equal(r.status, 200);
+    assert.deepEqual(r.json, { ok: true, ack: true });
+    assert.deepEqual([versCrm(r.appels).length, versBrevo(r.appels).length], [1, 2]);
+    assert.deepEqual(journal, []);
+  });
+
+  test('e-mail envoyé, CRM en échec → 200 comme sans le lien, l’échec est seulement journalisé', async (t) => {
+    const journal = capterErreurs(t);
+    const r = await envoyer({}, { env: ENV_CRM, fetch: fauxReseau({ crm: [500] }) });
+    assert.equal(r.status, 200);
+    assert.deepEqual(r.json, { ok: true, ack: true });
+    assert.deepEqual([versCrm(r.appels).length, versBrevo(r.appels).length], [1, 2]);
+    assert.deepEqual(journal, ['[lead] CRM : HTTP 500']);
+
+    // Téléphone seul : ack:false comme sans le lien, que le CRM ait répondu ou non.
+    _viderLimite();
+    const tel = await envoyer({ email: '' }, { env: ENV_CRM, fetch: fauxReseau({ crm: [500] }) });
+    assert.deepEqual(tel.json, { ok: true, ack: false });
+    assert.deepEqual([versCrm(tel.appels).length, versBrevo(tel.appels).length], [1, 1]);
+  });
+
+  test('e-mail à l’équipe en échec, CRM en succès → 200 ack:false, sans tenter l’accusé', async (t) => {
+    const journal = capterErreurs(t);
+    const r = await envoyer({}, { env: ENV_CRM, fetch: fauxReseau({ brevo: [401] }) });
+    assert.equal(r.status, 200);
+    assert.deepEqual(r.json, { ok: true, ack: false });
+    assert.equal(r.headers, undefined);
+    assert.deepEqual(
+      [versCrm(r.appels).length, versBrevo(r.appels).length],
+      [1, 1],
+      'un seul e-mail tenté : pas d’accusé',
+    );
+    assert.equal(journal.length, 1);
+    assert.ok(journal[0].includes('« équipe » : HTTP 401'));
+  });
+
+  test('e-mail à l’équipe en échec, CRM en échec → 502 envoi_impossible', async (t) => {
+    const journal = capterErreurs(t);
+    const r = await envoyer({}, { env: ENV_CRM, fetch: fauxReseau({ crm: [500], brevo: [500] }) });
+    assert.equal(r.status, 502);
+    assert.deepEqual(r.json, { error: 'envoi_impossible' });
+    assert.deepEqual([versCrm(r.appels).length, versBrevo(r.appels).length], [1, 1]);
+    assert.equal(journal.length, 2);
+    assert.equal(journal[0], '[lead] CRM : HTTP 500');
+  });
+
+  test('accusé de réception en échec, CRM en succès → 200 ack:false', async (t) => {
+    capterErreurs(t);
+    const r = await envoyer({}, { env: ENV_CRM, fetch: fauxReseau({ brevo: [201, 400] }) });
+    assert.equal(r.status, 200);
+    assert.deepEqual(r.json, { ok: true, ack: false });
+    assert.deepEqual([versCrm(r.appels).length, versBrevo(r.appels).length], [1, 2]);
+  });
+
+  test('tout code 2xx du CRM est un succès, tout autre un échec', async (t) => {
+    capterErreurs(t);
+    for (const code of [200, 201, 204, 299]) {
+      _viderLimite();
+      const r = await envoyer({}, { env: ENV_CRM, fetch: fauxReseau({ crm: [code], brevo: [500] }) });
+      assert.deepEqual(r.json, { ok: true, ack: false }, String(code));
+    }
+    for (const code of [199, 300, 301, 404]) {
+      _viderLimite();
+      const r = await envoyer({}, { env: ENV_CRM, fetch: fauxReseau({ crm: [code], brevo: [500] }) });
+      assert.equal(r.status, 502, String(code));
+    }
+  });
+
+  // Ici, la clé Brevo fait partie de la configuration de l'e-mail (pas de repli sur mail()).
+  for (const manquante of ['BREVO_API_KEY', 'LEAD_TO_EMAIL', 'LEAD_FROM_EMAIL']) {
+    test(`e-mail non configuré (sans ${manquante}), CRM actif : la demande part au CRM seul`, async (t) => {
+      const erreurs = capterErreurs(t);
+      const alertes = capterAlertes(t);
+      const env = { ...ENV_CRM, [manquante]: '' };
+
+      const r = await envoyer({}, { env });
+      assert.equal(r.status, 200);
+      assert.deepEqual(r.json, { ok: true, ack: false });
+      assert.equal(versCrm(r.appels).length, 1);
+      assert.equal(versBrevo(r.appels).length, 0, 'aucun e-mail');
+      const [appel] = versCrm(r.appels);
+      assert.equal(appel.options.headers['X-Amane-Signature'], signatureAttendue(appel.options.body));
+      assert.deepEqual([...erreurs, ...alertes], []);
+
+      _viderLimite();
+      const echec = await envoyer({}, { env, fetch: fauxReseau({ crm: [500] }) });
+      assert.equal(echec.status, 502);
+      assert.deepEqual(echec.json, { error: 'envoi_impossible' });
+      assert.equal(versCrm(echec.appels).length, 1);
+      assert.equal(versBrevo(echec.appels).length, 0);
+      assert.deepEqual(erreurs, ['[lead] CRM : HTTP 500']);
+    });
+  }
+
+  test('e-mail non configuré, CRM actif : la limite de débit s’applique aussi', async () => {
+    const env = { ...ENV_CRM, LEAD_TO_EMAIL: '' };
+    for (let i = 1; i <= 5; i++) {
+      const r = await envoyer({}, { env, now: T0 * 1000 + i * 1000 });
+      assert.equal(r.status, 200);
+    }
+    const r = await envoyer({}, { env, now: T0 * 1000 + 6000 });
+    assert.equal(r.status, 429);
+    assert.equal(r.appels.length, 0);
+  });
+
+  test('CRM qui refuse (403), en panne (500), qui redirige, dépasse le délai ou reste injoignable : journal sans secret ni contenu', async (t) => {
+    const journal = capterErreurs(t);
+    const cas = [
+      [403, '[lead] CRM : HTTP 403'],
+      [500, '[lead] CRM : HTTP 500'],
+      [301, '[lead] CRM : HTTP 301'],
+      [
+        new DOMException('The operation was aborted due to timeout', 'TimeoutError'),
+        '[lead] CRM injoignable : délai dépassé',
+      ],
+      [new TypeError('fetch failed'), '[lead] CRM injoignable : erreur réseau'],
+      [
+        new Error(`boum ${CRM_SECRET} SECRET-DU-CLIENT https://crm.amane.test/api/lead`),
+        '[lead] CRM injoignable : erreur réseau',
+      ],
+    ];
+    for (const [reponse, ligne] of cas) {
+      _viderLimite();
+      journal.length = 0;
+      const r = await envoyer({ message: 'SECRET-DU-CLIENT' }, { env: ENV_CRM, fetch: fauxReseau({ crm: [reponse] }) });
+      assert.equal(r.status, 200, ligne);
+      assert.deepEqual(r.json, { ok: true, ack: true }, 'l’e-mail est parti : la demande n’est pas perdue');
+      assert.deepEqual(journal, [ligne]);
+      for (const interdit of [
+        CRM_SECRET,
+        'SECRET-DU-CLIENT',
+        'crm.amane.test',
+        'https://',
+        'jeanne.martin@example.com',
+        'Jeanne',
+        '+33 6 12',
+        '203.0.113',
+      ]) {
+        assert.ok(!journal[0].includes(interdit), `le journal ne doit pas contenir « ${interdit} »`);
+      }
+    }
+  });
+
+  test('le corps de la réponse du CRM n’est pas lu', async (t) => {
+    capterErreurs(t);
+    for (const status of [200, 403]) {
+      _viderLimite();
+      const acces = [];
+      const reponse = {
+        status,
+        body: { cancel: async () => acces.push('cancel') },
+        text: async () => acces.push('text'),
+        json: async () => acces.push('json'),
+        arrayBuffer: async () => acces.push('arrayBuffer'),
+      };
+      const { fetchImpl: brevo } = fauxFetch();
+      const fetchImpl = (url, options) => (url === BREVO_URL ? brevo(url, options) : Promise.resolve(reponse));
+      const r = await processLead({ body: DEMANDE, ip: '203.0.113.15', env: ENV_CRM, fetchImpl });
+      assert.deepEqual(r.json, { ok: true, ack: true });
+      assert.deepEqual(acces, ['cancel'], 'connexion libérée, corps jamais lu');
+    }
+  });
+
+  test('le piège à robots, une demande invalide, une origine refusée et la limite de débit n’appellent pas le CRM', async (t) => {
+    capterAlertes(t);
+    const cas = [
+      [{ a_laisser_vide: 'robot' }, {}, 200],
+      [{ email: 'invalide' }, {}, 400],
+      [{ email: '', tel: '' }, {}, 400],
+      [{ tel: '12' }, {}, 400],
+      [{}, { body: '{nom:' }, 400],
+      [{}, { origin: 'https://pirate.example' }, 403],
+    ];
+    for (const [surcharge, options, status] of cas) {
+      const r = await envoyer(surcharge, { ...options, env: ENV_CRM });
+      assert.equal(r.status, status, JSON.stringify([surcharge, options]));
+      assert.equal(r.appels.length, 0);
+    }
+
+    // Cinq demandes passent, avec un appel au CRM chacune ; la sixième est arrêtée avant le CRM.
+    for (let i = 1; i <= 5; i++) {
+      const r = await envoyer({}, { env: ENV_CRM, ip: '198.51.100.60', now: T0 * 1000 + i * 1000 });
+      assert.equal(r.status, 200, `appel ${i}`);
+      assert.equal(versCrm(r.appels).length, 1);
+    }
+    const sixieme = await envoyer({}, { env: ENV_CRM, ip: '198.51.100.60', now: T0 * 1000 + 6000 });
+    assert.equal(sixieme.status, 429);
+    assert.deepEqual(sixieme.json, { error: 'trop_de_demandes' });
+    assert.equal(sixieme.appels.length, 0);
+  });
+});
+
+// ---------------------------------------------------------------------------
 describe('handler Vercel', () => {
   function fausseRequete({ method = 'POST', headers = {}, corps, body } = {}) {
     const req = corps === undefined ? Readable.from([]) : Readable.from([Buffer.from(corps)]);
@@ -969,7 +1445,15 @@ describe('handler Vercel', () => {
   function simuler(t, env = ENV, ...reponses) {
     const { fetchImpl, appels } = fauxFetch(...reponses);
     t.mock.method(globalThis, 'fetch', fetchImpl);
-    const noms = ['BREVO_API_KEY', 'LEAD_TO_EMAIL', 'LEAD_FROM_EMAIL', 'LEAD_FROM_NAME', 'ALLOWED_ORIGINS'];
+    const noms = [
+      'BREVO_API_KEY',
+      'LEAD_TO_EMAIL',
+      'LEAD_FROM_EMAIL',
+      'LEAD_FROM_NAME',
+      'ALLOWED_ORIGINS',
+      'CRM_URL',
+      'CRM_SECRET',
+    ];
     const avant = Object.fromEntries(noms.map((n) => [n, process.env[n]]));
     for (const n of noms) {
       if (env[n] === undefined) delete process.env[n];
@@ -1072,6 +1556,24 @@ describe('handler Vercel', () => {
     assert.equal(res.json.error, 'email_off');
     verifierEntetes(res);
     assert.equal(appels.length, 0);
+  });
+
+  test('POST : lien CRM actif → la demande part au CRM puis par e-mail, sans l’adresse IP du visiteur', async (t) => {
+    const appels = simuler(t, ENV_CRM);
+    const res = fausseReponse();
+    const avant = Math.floor(Date.now() / 1000);
+    await handler(fausseRequete({ corps: JSON.stringify(DEMANDE), headers: { 'x-real-ip': '192.0.2.55' } }), res);
+    assert.equal(res.statusCode, 200);
+    assert.deepEqual(res.json, { ok: true, ack: true });
+    assert.deepEqual(
+      appels.map((appel) => appel.url),
+      ['https://crm.amane.test/api/lead', BREVO_URL, BREVO_URL],
+    );
+    const { headers, body } = appels[0].options;
+    const [, horodatage, v1] = /^t=(\d+),v1=([0-9a-f]{64})$/.exec(headers['X-Amane-Signature']);
+    assert.ok(Number(horodatage) >= avant && Number(horodatage) <= avant + 5, 'horodatage : l’heure réelle');
+    assert.equal(v1, createHmac('sha256', CRM_SECRET).update(`${horodatage}.${body}`).digest('hex'));
+    assert.ok(!body.includes('192.0.2'));
   });
 
   test('POST : limite par IP lue dans x-real-ip, avec Retry-After', async (t) => {

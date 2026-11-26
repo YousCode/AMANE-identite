@@ -3,8 +3,8 @@
 /**
  * Logique du formulaire de demande, pour l'hébergement OVH (Apache + PHP 8.1 à 8.3).
  * Version PHP de site/api/lead.js + site/api/_lib/lead-core.js : même contrat,
- * mêmes codes de réponse, mêmes e-mails. Si l'une des deux versions change,
- * l'autre doit suivre.
+ * mêmes codes de réponse, mêmes e-mails, même envoi au CRM. Si l'une des deux
+ * versions change, l'autre doit suivre.
  *
  * Tout ce qui vient de l'extérieur est passé en argument (corps, IP, en-têtes,
  * configuration, envoi HTTP, mail(), horloge, dossier de données), ce qui rend
@@ -33,6 +33,12 @@ require_once __DIR__ . '/emails.php';
 const BREVO_URL = 'https://api.brevo.com/v3/smtp/email';
 const DELAI_BREVO_S = 8;
 
+// Lien avec le CRM de la maison : chaque demande y est aussi envoyée, de serveur
+// à serveur, signée avec un secret partagé (voir « Lien avec le CRM » plus bas).
+const CRM_CHEMIN = '/api/lead';
+const DELAI_CRM_S = 5;
+const CRM_SECRET_MIN = 32; // en dessous, le CRM refuse toute signature
+
 const TAILLE_MAX_CORPS = 16 * 1024; // 16 Ko
 
 const TAILLES = [
@@ -46,7 +52,15 @@ const TAILLES = [
 const LIMITE_ENVOIS = 5;
 const LIMITE_FENETRE_S = 3600;
 
-const CLES_CONFIG = ['BREVO_API_KEY', 'LEAD_TO_EMAIL', 'LEAD_FROM_EMAIL', 'LEAD_FROM_NAME', 'ALLOWED_ORIGINS'];
+const CLES_CONFIG = [
+    'BREVO_API_KEY',
+    'LEAD_TO_EMAIL',
+    'LEAD_FROM_EMAIL',
+    'LEAD_FROM_NAME',
+    'ALLOWED_ORIGINS',
+    'CRM_URL',
+    'CRM_SECRET',
+];
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -56,7 +70,7 @@ const CLES_CONFIG = ['BREVO_API_KEY', 'LEAD_TO_EMAIL', 'LEAD_FROM_EMAIL', 'LEAD_
  * Lit la configuration : d'abord le fichier PHP (qui fait « return [...] »),
  * puis, pour chaque clé absente ou vide, la variable d'environnement du même nom.
  *
- * @return array<string, string> les cinq clés de CLES_CONFIG, toujours présentes
+ * @return array<string, string> toutes les clés de CLES_CONFIG, toujours présentes
  */
 function chargerConfig(string $fichier, ?callable $getenv = null, ?callable $journal = null): array
 {
@@ -380,7 +394,7 @@ function origineAutorisee(?string $origin, ?string $host, ?string $autorisees): 
 }
 
 // ---------------------------------------------------------------------------
-// Envoi par l'API Brevo (curl)
+// Envoi HTTP (curl) : API Brevo et CRM
 // ---------------------------------------------------------------------------
 
 /**
@@ -443,6 +457,125 @@ function envoyerBrevo(string $cleApi, array $message, callable $http, string $et
     } else {
         $nature = $code === -28 ? 'délai dépassé' : 'erreur réseau';
         $journal("[lead] Brevo injoignable pour l'e-mail « $etiquette » : $nature");
+    }
+
+    return false;
+}
+
+// ---------------------------------------------------------------------------
+// Lien avec le CRM (de serveur à serveur, signé)
+//
+// Protocole, fixé avec le CRM (sa route /api/lead) :
+//   POST <CRM_URL>/api/lead
+//   Content-Type: application/json
+//   X-Amane-Signature: t=<secondes Unix>,v1=<hexadécimal>
+// où v1 est le HMAC-SHA256 de « <t>.<corps brut> » avec le secret partagé
+// (CRM_SECRET ici, SITE_LEAD_SECRET côté CRM). Le CRM refuse (403) une
+// signature fausse, ou un horodatage qui a plus de cinq minutes d'écart.
+// ---------------------------------------------------------------------------
+
+/** Longueur d'une chaîne en unités UTF-16 : la mesure de JavaScript, celle qu'applique le CRM au secret. */
+function longueurJs(string $texte): int
+{
+    return intdiv(strlen(mb_convert_encoding($texte, 'UTF-16BE', 'UTF-8')), 2);
+}
+
+/**
+ * Le lien n'est actif que si CRM_URL commence par « https:// » et si CRM_SECRET
+ * fait au moins 32 caractères. Renvoie alors l'adresse d'envoi et le secret ;
+ * sinon null. Aucune des deux clés renseignée : le lien n'est pas demandé, rien
+ * n'est signalé. Une seule, ou une valeur invalide : c'est signalé au journal,
+ * sans jamais y écrire la valeur.
+ *
+ * @return array{url: string, secret: string}|null
+ */
+function lienCrm(string $url, string $secret, callable $journal): ?array
+{
+    if ($url === '' && $secret === '') {
+        return null;
+    }
+    $base = rtrim($url, '/'); // « https://crm.exemple.fr/ » → « https://crm.exemple.fr »
+    $defauts = [];
+    if ($url === '') {
+        $defauts[] = 'CRM_URL manquante';
+    } elseif (!preg_match('~^https://[^/\s?#]+(?:/[^\s?#]*)?$~D', $base)) {
+        $defauts[] = 'CRM_URL invalide (elle doit commencer par https://)';
+    }
+    if ($secret === '') {
+        $defauts[] = 'CRM_SECRET manquant';
+    } elseif (longueurJs($secret) < CRM_SECRET_MIN) {
+        $defauts[] = 'CRM_SECRET trop court (' . CRM_SECRET_MIN . ' caractères minimum)';
+    }
+    if ($defauts !== []) {
+        $journal('[lead] lien CRM inactif : ' . implode(' ; ', $defauts));
+
+        return null;
+    }
+
+    return ['url' => $base . CRM_CHEMIN, 'secret' => $secret];
+}
+
+/**
+ * Ce que le CRM reçoit : les valeurs déjà nettoyées par nettoyerDemande(), la
+ * langue en majuscules. Ni l'adresse IP du visiteur, ni le champ piège.
+ *
+ * @param array<string, string> $lead
+ * @return array<string, string>
+ */
+function demandeCrm(array $lead): array
+{
+    return [
+        'nom' => $lead['nom'],
+        'tel' => $lead['tel'],
+        'email' => $lead['email'],
+        'langue' => strtoupper($lead['langue']),
+        'service' => $lead['service'],
+        'date' => $lead['date'],
+        'passagers' => $lead['passagers'],
+        'message' => $lead['message'],
+    ];
+}
+
+/** En-tête X-Amane-Signature : « t=<secondes>,v1=<HMAC-SHA256 de "<t>.<corps>", en hexadécimal> ». */
+function signatureCrm(string $secret, int $t, string $corps): string
+{
+    return 't=' . $t . ',v1=' . hash_hmac('sha256', $t . '.' . $corps, $secret);
+}
+
+/**
+ * Envoie la demande au CRM. Renvoie true s'il l'a acceptée (réponse 2xx).
+ * Ne journalise ni le secret, ni l'adresse du CRM, ni le contenu de la demande ;
+ * le corps de la réponse n'est pas regardé.
+ *
+ * @param array{url: string, secret: string} $lien voir lienCrm()
+ * @param array<string, string> $lead voir nettoyerDemande()
+ */
+function envoyerCrm(array $lien, array $lead, int $t, callable $http, callable $journal): bool
+{
+    // Le JSON est produit une seule fois : ce qui est signé est, à l'octet près, ce qui est envoyé.
+    $corps = json_encode(demandeCrm($lead), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    if (!is_string($corps)) {
+        $journal('[lead] CRM : demande impossible à encoder');
+
+        return false;
+    }
+    $entetes = [
+        'Content-Type' => 'application/json',
+        'X-Amane-Signature' => signatureCrm($lien['secret'], $t, $corps),
+    ];
+    try {
+        $code = (int) $http($lien['url'], $entetes, $corps, DELAI_CRM_S);
+    } catch (\Throwable $erreur) {
+        $code = -1;
+    }
+    if ($code >= 200 && $code < 300) {
+        return true;
+    }
+    if ($code > 0) {
+        $journal("[lead] CRM : HTTP $code");
+    } else {
+        $nature = $code === -28 ? 'délai dépassé' : 'erreur réseau';
+        $journal("[lead] CRM injoignable : $nature");
     }
 
     return false;
@@ -612,7 +745,7 @@ function instant(mixed $now): int
  * @param string|null $origin en-tête Origin
  * @param string|null $host en-tête Host
  * @param array<string, mixed> $config voir chargerConfig()
- * @param callable|null $http envoi HTTP vers Brevo : fn(url, en-têtes, corps, délai) => code HTTP
+ * @param callable|null $http envoi HTTP (Brevo et CRM) : fn(url, en-têtes, corps, délai) => code HTTP
  * @param callable|null $mail envoi par mail() : fn(à, sujet, corps, en-têtes, paramètres) => bool
  * @param int|callable|null $now horloge en secondes, pour les tests
  * @param string|null $dataDir dossier des compteurs de débit
@@ -668,8 +801,9 @@ function processLead(
         return [400, ['error' => 'tel_invalide'], []];
     }
 
-    // 5. Configuration. Avec une clé Brevo : envoi par l'API. Sans : repli sur mail().
-    // Dans les deux cas, il faut savoir à qui écrire et de la part de qui.
+    // 5. Configuration.
+    // E-mails : avec une clé Brevo, envoi par l'API ; sans, repli sur mail(). Dans
+    // les deux cas, il faut savoir à qui écrire et de la part de qui.
     $cleApi = $cfg('BREVO_API_KEY');
     $destinataires = [];
     foreach (preg_split('/[,;]/', $cfg('LEAD_TO_EMAIL')) ?: [] as $adresse) {
@@ -679,7 +813,11 @@ function processLead(
         }
     }
     $expediteur = uneLigne($cfg('LEAD_FROM_EMAIL'), 200);
-    if ($destinataires === [] || $expediteur === '') {
+    $emailsPrets = $destinataires !== [] && $expediteur !== '';
+    // Lien CRM : actif seulement si ses deux clés sont valides (voir lienCrm).
+    $crm = lienCrm($cfg('CRM_URL'), $cfg('CRM_SECRET'), $journal);
+    // Ni e-mail ni CRM : la demande n'a nulle part où aller.
+    if (!$emailsPrets && $crm === null) {
         return [503, [
             'error' => 'email_off',
             'message' => 'L’envoi des demandes n’est pas encore configuré. Merci de nous joindre par téléphone.',
@@ -695,13 +833,27 @@ function processLead(
         return [429, ['error' => 'trop_de_demandes'], ['Retry-After' => (string) $attente]];
     }
 
+    $http ??= __NAMESPACE__ . '\\envoiHttpCurl';
+
+    // 7. CRM d'abord, puis les e-mails : une demande n'est perdue que si tout échoue.
+    // Un échec du CRM est seulement journalisé tant que l'e-mail à l'équipe part.
+    $crmOk = $crm !== null && envoyerCrm($crm, $lead, $t, $http, $journal);
+    // Réponse quand l'e-mail à l'équipe n'est pas parti : la demande est tout de
+    // même enregistrée si le CRM l'a prise (sans accusé de réception), perdue sinon.
+    $sansEmail = $crmOk
+        ? [200, ['ok' => true, 'ack' => false], []]
+        : [502, ['error' => 'envoi_impossible'], []];
+    if (!$emailsPrets) {
+        return $sansEmail; // e-mails non configurés : la demande n'est partie qu'au CRM
+    }
+
     $envoyer = static function (array $message, string $etiquette) use ($cleApi, $http, $mail, $journal): bool {
         return $cleApi !== ''
-            ? envoyerBrevo($cleApi, $message, $http ?? __NAMESPACE__ . '\\envoiHttpCurl', $etiquette, $journal)
+            ? envoyerBrevo($cleApi, $message, $http, $etiquette, $journal)
             : envoyerMail($message, $mail ?? __NAMESPACE__ . '\\envoiMailPhp', $etiquette, $journal);
     };
 
-    // 7. E-mail à l'équipe
+    // 8. E-mail à l'équipe
     $equipe = teamEmail($lead + ['recuLe' => dateParis($t)]);
     $messageEquipe = [
         'sender' => $sender,
@@ -716,10 +868,10 @@ function processLead(
             : ['email' => $lead['email']];
     }
     if (!$envoyer($messageEquipe, 'équipe')) {
-        return [502, ['error' => 'envoi_impossible'], []];
+        return $sansEmail;
     }
 
-    // 8. Accusé de réception (seulement si le client a laissé un e-mail)
+    // 9. Accusé de réception (seulement si le client a laissé un e-mail)
     if ($lead['email'] === '') {
         return [200, ['ok' => true, 'ack' => false], []];
     }

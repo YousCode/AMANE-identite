@@ -5,10 +5,18 @@
 // processLead(...) renvoie { status, json } (et parfois { headers }) ; le handler
 // api/lead.js se contente de transmettre.
 
+import { createHmac } from 'node:crypto';
+
 import { ackEmail, teamEmail, uneLigne, couper, idService, dateIso, passagersValides, LANGUES } from './emails.js';
 
 export const BREVO_URL = 'https://api.brevo.com/v3/smtp/email';
 export const DELAI_BREVO_MS = 8000;
+
+// Lien avec le CRM de la maison : chaque demande y est aussi envoyée, de serveur
+// à serveur, signée avec un secret partagé (voir « Lien avec le CRM » plus bas).
+export const CRM_CHEMIN = '/api/lead';
+export const DELAI_CRM_MS = 5000;
+export const CRM_SECRET_MIN = 32; // en dessous, le CRM refuse toute signature
 
 export const TAILLES = {
   nom: 120,
@@ -218,6 +226,107 @@ async function envoyerBrevo({ cleApi, message, fetchImpl, etiquette }) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Lien avec le CRM (de serveur à serveur, signé)
+//
+// Protocole, fixé avec le CRM (sa route /api/lead) :
+//   POST <CRM_URL>/api/lead
+//   Content-Type: application/json
+//   X-Amane-Signature: t=<secondes Unix>,v1=<hexadécimal>
+// où v1 est le HMAC-SHA256 de « <t>.<corps brut> » avec le secret partagé
+// (CRM_SECRET ici, SITE_LEAD_SECRET côté CRM). Le CRM refuse (403) une
+// signature fausse, ou un horodatage qui a plus de cinq minutes d'écart.
+// ---------------------------------------------------------------------------
+
+/**
+ * Le lien n'est actif que si CRM_URL commence par « https:// » et si CRM_SECRET
+ * fait au moins 32 caractères. Renvoie alors l'adresse d'envoi et le secret ;
+ * sinon null. Aucune des deux clés renseignée : le lien n'est pas demandé, rien
+ * n'est signalé. Une seule, ou une valeur invalide : c'est signalé au journal,
+ * sans jamais y écrire la valeur.
+ */
+function lienCrm(url, secret) {
+  if (!url && !secret) return null;
+  const base = url.replace(/\/+$/, ''); // « https://crm.exemple.fr/ » → « https://crm.exemple.fr »
+  const defauts = [];
+  if (!url) defauts.push('CRM_URL manquante');
+  else if (!/^https:\/\/[^/\s?#]+(?:\/[^\s?#]*)?$/.test(base)) {
+    defauts.push('CRM_URL invalide (elle doit commencer par https://)');
+  }
+  if (!secret) defauts.push('CRM_SECRET manquant');
+  else if (secret.length < CRM_SECRET_MIN) {
+    defauts.push(`CRM_SECRET trop court (${CRM_SECRET_MIN} caractères minimum)`);
+  }
+  if (defauts.length > 0) {
+    console.warn(`[lead] lien CRM inactif : ${defauts.join(' ; ')}`);
+    return null;
+  }
+  return { url: base + CRM_CHEMIN, secret };
+}
+
+/**
+ * Ce que le CRM reçoit : les valeurs déjà nettoyées par nettoyerDemande(), la
+ * langue en majuscules. Ni l'adresse IP du visiteur, ni le champ piège.
+ */
+function demandeCrm(lead) {
+  return {
+    nom: lead.nom,
+    tel: lead.tel,
+    email: lead.email,
+    langue: lead.langue.toUpperCase(),
+    service: lead.service,
+    date: lead.date,
+    passagers: lead.passagers,
+    message: lead.message,
+  };
+}
+
+/** En-tête X-Amane-Signature : « t=<secondes>,v1=<HMAC-SHA256 de "<t>.<corps>", en hexadécimal> ». */
+function signatureCrm(secret, t, corps) {
+  return `t=${t},v1=${createHmac('sha256', secret).update(`${t}.${corps}`).digest('hex')}`;
+}
+
+/**
+ * Envoie la demande au CRM. Renvoie true s'il l'a acceptée (réponse 2xx).
+ * Ne journalise ni le secret, ni l'adresse du CRM, ni le contenu de la demande ;
+ * le corps de la réponse n'est pas lu.
+ *
+ * @param {object} p
+ * @param {{url: string, secret: string}} p.lien voir lienCrm()
+ * @param {object} p.lead                        voir nettoyerDemande()
+ * @param {number} p.t                           horloge, en millisecondes
+ * @param {typeof fetch} p.fetchImpl
+ */
+async function envoyerCrm({ lien, lead, t, fetchImpl }) {
+  try {
+    // Le JSON est produit une seule fois : ce qui est signé est, à l'octet près, ce qui est envoyé.
+    const corps = JSON.stringify(demandeCrm(lead));
+    const reponse = await fetchImpl(lien.url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Amane-Signature': signatureCrm(lien.secret, Math.floor(t / 1000), corps),
+      },
+      body: corps,
+      redirect: 'manual', // comme la version PHP : une redirection est un échec, on ne la suit pas
+      signal: AbortSignal.timeout(DELAI_CRM_MS),
+    });
+    const ok = reponse.status >= 200 && reponse.status < 300;
+    // On libère la connexion sans lire le corps de la réponse.
+    try {
+      await reponse.body?.cancel?.();
+    } catch {
+      /* sans importance */
+    }
+    if (!ok) console.error(`[lead] CRM : HTTP ${reponse.status}`);
+    return ok;
+  } catch (erreur) {
+    const nature = erreur?.name === 'TimeoutError' ? 'délai dépassé' : 'erreur réseau';
+    console.error(`[lead] CRM injoignable : ${nature}`);
+    return false;
+  }
+}
+
 function dateParis(t) {
   try {
     return new Intl.DateTimeFormat('fr-FR', {
@@ -249,7 +358,7 @@ const rep = (status, json, headers) => (headers ? { status, json, headers } : { 
  * @param {string} [p.origin]    en-tête Origin
  * @param {string} [p.host]      en-tête Host
  * @param {Record<string, string|undefined>} [p.env]
- * @param {typeof fetch} [p.fetchImpl]
+ * @param {typeof fetch} [p.fetchImpl] envoi HTTP (Brevo et CRM)
  * @param {number|Date|(() => number)} [p.now] horloge (millisecondes), pour les tests
  * @returns {Promise<{status: number, json: object, headers?: Record<string, string>}>}
  */
@@ -300,7 +409,11 @@ export async function processLead({
     .map((a) => uneLigne(a, 200))
     .filter(Boolean);
   const expediteur = uneLigne(env.LEAD_FROM_EMAIL, 200);
-  if (!cleApi || destinataires.length === 0 || !expediteur) {
+  const emailsPrets = Boolean(cleApi && destinataires.length > 0 && expediteur);
+  // Lien CRM : actif seulement si ses deux clés sont valides (voir lienCrm).
+  const crm = lienCrm(String(env.CRM_URL ?? '').trim(), String(env.CRM_SECRET ?? '').trim());
+  // Ni e-mail ni CRM : la demande n'a nulle part où aller.
+  if (!emailsPrets && !crm) {
     return rep(503, {
       error: 'email_off',
       message: 'L’envoi des demandes n’est pas encore configuré. Merci de nous joindre par téléphone.',
@@ -315,7 +428,15 @@ export async function processLead({
     return rep(429, { error: 'trop_de_demandes' }, { 'Retry-After': String(attente) });
   }
 
-  // 7. E-mail à l'équipe
+  // 7. CRM d'abord, puis les e-mails : une demande n'est perdue que si tout échoue.
+  // Un échec du CRM est seulement journalisé tant que l'e-mail à l'équipe part.
+  const crmOk = crm ? await envoyerCrm({ lien: crm, lead, t, fetchImpl }) : false;
+  // Réponse quand l'e-mail à l'équipe n'est pas parti : la demande est tout de
+  // même enregistrée si le CRM l'a prise (sans accusé de réception), perdue sinon.
+  const sansEmail = crmOk ? rep(200, { ok: true, ack: false }) : rep(502, { error: 'envoi_impossible' });
+  if (!emailsPrets) return sansEmail; // e-mails non configurés : la demande n'est partie qu'au CRM
+
+  // 8. E-mail à l'équipe
   const equipe = teamEmail({ ...lead, recuLe: dateParis(t) });
   const messageEquipe = {
     sender,
@@ -328,9 +449,9 @@ export async function processLead({
     messageEquipe.replyTo = lead.nom ? { email: lead.email, name: lead.nom } : { email: lead.email };
   }
   const equipeOk = await envoyerBrevo({ cleApi, message: messageEquipe, fetchImpl, etiquette: 'équipe' });
-  if (!equipeOk) return rep(502, { error: 'envoi_impossible' });
+  if (!equipeOk) return sansEmail;
 
-  // 8. Accusé de réception (seulement si le client a laissé un e-mail)
+  // 9. Accusé de réception (seulement si le client a laissé un e-mail)
   if (!lead.email) return rep(200, { ok: true, ack: false });
 
   // Ni texte libre dans le contenu (voir ackEmail), ni nom affiché dans le

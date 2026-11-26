@@ -25,17 +25,21 @@ export function App({ lang }: { lang: Lang }) {
 
   // Apparition des blocs à l'entrée dans l'écran, une seule fois.
   useEffect(() => {
-    const io = new IntersectionObserver(
-      (entries) =>
-        entries.forEach((e) => {
-          if (!e.isIntersecting) return;
-          e.target.classList.add('in');
-          io.unobserve(e.target);
-        }),
-      { rootMargin: '0px 0px -7% 0px' },
-    );
-    document.querySelectorAll('.rv').forEach((el) => io.observe(el));
-    return () => io.disconnect();
+    const enter: IntersectionObserverCallback = (entries, observer) =>
+      entries.forEach((e) => {
+        if (!e.isIntersecting) return;
+        e.target.classList.add('in');
+        observer.unobserve(e.target);
+      });
+    const io = new IntersectionObserver(enter, { rootMargin: '0px 0px -7% 0px' });
+    // Dans une scène épinglée le texte ne défile pas : sans marge, sinon le lien posé en bas d'un film
+    // reste hors de la zone d'entrée, donc invisible, sur un écran de plus de 1200 px de haut.
+    const pinned = new IntersectionObserver(enter);
+    document.querySelectorAll('.rv').forEach((el) => (el.closest('.scene') ? pinned : io).observe(el));
+    return () => {
+      io.disconnect();
+      pinned.disconnect();
+    };
   }, []);
 
   // Défilement doux à la souris ; le tactile garde son inertie native.
@@ -92,7 +96,7 @@ export function App({ lang }: { lang: Lang }) {
             {/* La flotte clôt le chapitre de la route. */}
             {c.id === 'route' && <Flotte d={d} />}
             {/* Ce que la maison a créé : films, visuels et sites, à la suite du film « Création & marketing ». */}
-            {c.id === 'image' && <Realisations d={d} />}
+            {c.id === 'image' && <Realisations d={d} lang={lang} />}
             {/* L'accueil à l'aéroport clôt le premier chapitre : ce n'est pas un service à part, c'est la promesse. */}
             {ci === 0 && (
               <Film

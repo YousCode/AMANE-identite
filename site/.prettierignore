@@ -6,3 +6,6 @@ package-lock.json
 src/i18n-base.json
 src/brand/*.svg
 dist-ovh/
+
+# Écrit par scripts/encoder-films.sh
+src/films-2k.json

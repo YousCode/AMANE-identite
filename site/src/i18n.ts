@@ -149,6 +149,10 @@ type Extra = {
   wVisit: string;
   wClose: string;
   wFor: string;
+  wMore: string;
+  wWith: string;
+  /** Ce que la maison a fait sur une réalisation : les clés sont celles de `roles` dans src/realisations.ts. */
+  wRoles: Record<string, string>;
 };
 
 export type Dict = Base & Extra;
@@ -238,12 +242,26 @@ const extra: Record<Lang, Extra> = {
     jHint: 'Choisissez une carte',
     wk: 'Réalisations',
     wt: 'Ce que nous <em>signons.</em>',
-    wp: 'Films, visuels et sites : voici ce que la maison a créé pour elle-même. Les prochains seront les vôtres.',
+    wp: 'Films, visuels et sites : ce que nous faisons, ce que nous signons, et pour qui.',
     wFilters: ['Tout', 'Films', 'Visuels', 'Sites'],
     wKinds: ['Film', 'Visuel', 'Site'],
     wVisit: 'Voir le site',
     wClose: 'Fermer',
     wFor: 'Pour',
+    wMore: 'Détails du projet',
+    wWith: 'Avec',
+    wRoles: {
+      da: 'Direction artistique',
+      film: 'Réalisation',
+      montage: 'Montage',
+      photo: 'Photographie',
+      identite: 'Identité visuelle',
+      illustration: 'Illustration',
+      design: 'Design',
+      dev: 'Développement',
+      seo: 'Référencement',
+      social: 'Réseaux sociaux',
+    },
   },
   en: {
     metaTitle: 'Amane — Private Concierge in Paris | Luxury Cars & Chauffeurs',
@@ -323,12 +341,26 @@ const extra: Record<Lang, Extra> = {
     jHint: 'Pick a card',
     wk: 'Our work',
     wt: 'What we <em>sign.</em>',
-    wp: 'Films, visuals and websites: this is what the house has made for itself. The next ones will be yours.',
+    wp: 'Films, visuals and websites: what we make, what we sign, and for whom.',
     wFilters: ['All', 'Films', 'Visuals', 'Websites'],
     wKinds: ['Film', 'Visual', 'Website'],
     wVisit: 'Visit the site',
     wClose: 'Close',
     wFor: 'For',
+    wMore: 'Project details',
+    wWith: 'With',
+    wRoles: {
+      da: 'Art direction',
+      film: 'Film direction',
+      montage: 'Editing',
+      photo: 'Photography',
+      identite: 'Visual identity',
+      illustration: 'Illustration',
+      design: 'Design',
+      dev: 'Development',
+      seo: 'SEO',
+      social: 'Social media',
+    },
   },
   es: {
     metaTitle: 'Amane — Concierge privado en París | Coches y chóferes',
@@ -411,12 +443,26 @@ const extra: Record<Lang, Extra> = {
     jHint: 'Elija una carta',
     wk: 'Trabajos',
     wt: 'Lo que <em>firmamos.</em>',
-    wp: 'Películas, visuales y sitios web: esto es lo que la casa ha creado para sí misma. Los próximos serán los suyos.',
+    wp: 'Películas, visuales y sitios web: lo que hacemos, lo que firmamos y para quién.',
     wFilters: ['Todo', 'Películas', 'Visuales', 'Sitios'],
     wKinds: ['Película', 'Visual', 'Sitio web'],
     wVisit: 'Ver el sitio',
     wClose: 'Cerrar',
     wFor: 'Para',
+    wMore: 'Detalles del proyecto',
+    wWith: 'Con',
+    wRoles: {
+      da: 'Dirección de arte',
+      film: 'Realización',
+      montage: 'Montaje',
+      photo: 'Fotografía',
+      identite: 'Identidad visual',
+      illustration: 'Ilustración',
+      design: 'Diseño',
+      dev: 'Desarrollo',
+      seo: 'SEO',
+      social: 'Redes sociales',
+    },
   },
   ar: {
     metaTitle: 'Amane — كونسيرج خاص في باريس | سيارات فاخرة وسائقون',
@@ -492,12 +538,26 @@ const extra: Record<Lang, Extra> = {
     jHint: 'اختر ورقة',
     wk: 'أعمالنا',
     wt: 'ما <em>نوقّعه.</em>',
-    wp: 'أفلام وصور ومواقع: هذا ما صنعته الدار لنفسها. والقادمة ستكون لكم.',
+    wp: 'أفلام وصور ومواقع: ما نصنعه، وما نوقّعه، ولمن.',
     wFilters: ['الكل', 'أفلام', 'صور', 'مواقع'],
     wKinds: ['فيلم', 'صورة', 'موقع'],
     wVisit: 'زيارة الموقع',
     wClose: 'إغلاق',
     wFor: 'لصالح',
+    wMore: 'تفاصيل المشروع',
+    wWith: 'مع',
+    wRoles: {
+      da: 'الإدارة الفنية',
+      film: 'الإخراج',
+      montage: 'المونتاج',
+      photo: 'التصوير',
+      identite: 'الهوية البصرية',
+      illustration: 'الرسم',
+      design: 'التصميم',
+      dev: 'التطوير',
+      seo: 'تحسين الظهور في محركات البحث',
+      social: 'وسائل التواصل',
+    },
   },
 };
 
@@ -552,7 +612,7 @@ export const SERVICES = [
   { key: 's9', id: 'evenements', film: 'reception', portrait: '', flip: false, passage: 'p08' },
   { key: 's4', id: 'shopping', film: 'shopping', portrait: '', flip: false, passage: '' },
   { key: 's10', id: 'esthetique', film: 'clinique', portrait: 'm-clinique', flip: true, passage: 'p10' },
-  { key: 's11', id: 'creation', film: 'tournage', portrait: '', flip: true, passage: '' },
+  { key: 's11', id: 'creation', film: 'tournage', portrait: '', flip: false, passage: '' },
   { key: 's6', id: 'conciergerie', film: 'cour', portrait: '', flip: false, passage: '' },
 ] as const;
 
