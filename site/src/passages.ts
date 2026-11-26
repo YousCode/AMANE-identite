@@ -5,21 +5,19 @@ import { reducedMotion, useScrollFrame } from './ui';
 /**
  * Les passages : de courts plans de caméra qui relient un film au suivant, joués au rythme du défilement.
  *
- * Chaque passage est livré en images fixes (public/passages/pNN/), `d-00.webp` à `d-39.webp` en 16:9
- * et `m-00.webp` à `m-39.webp` recadrées en 9:16 pour les écrans en hauteur (scripts/passages.sh).
- * Les images arrivent par passes de plus en plus fines (une sur huit, puis une sur quatre…) : le
- * mouvement est lisible dès les premières, puis s'affine. Entre deux images, la suivante est fondue
- * par-dessus la précédente, au prorata : aucun à-coup, quelle que soit la vitesse du défilement.
+ * Chaque passage est livré en 40 images réunies dans un seul fichier (scripts/passages.sh) :
+ * `public/passages/pNN-d.bin` en 16:9, `pNN-m.bin` recadré en 9:16 pour les écrans en hauteur.
+ * Entre deux images, la suivante est fondue par-dessus la précédente, au prorata : aucun à-coup,
+ * quelle que soit la vitesse du défilement.
  *
  *  <canvas class="passage" data-passage="p03" data-mode="chapitre">
  *    chapitre  le passage court sur toute l'ouverture du chapitre (arrivée, puis recouvrement)
  *    entree    le passage occupe l'arrivée du film ; la vidéo prend le relais une fois la scène en place
  *
- * Tant que les premières images ne sont pas là, ou avec « réduire les animations », la toile reste
- * transparente et l'affiche posée derrière (data-poster) tient lieu d'image.
+ * Tant que les images ne sont pas là, ou avec « réduire les animations », la toile reste
+ * transparente : l'affiche posée derrière (data-poster) ou la vidéo du film tient lieu d'image.
  */
 export const PASSAGE_FRAMES = 40;
-const PASSES = [8, 4, 2, 1];
 
 type Item = {
   cv: HTMLCanvasElement;
@@ -27,6 +25,7 @@ type Item = {
   mode: 'chapitre' | 'entree';
   imgs: (HTMLImageElement | undefined)[];
   requested: boolean;
+  abort?: AbortController;
   /** Change à chaque déchargement : les téléchargements en cours d'un tour précédent s'arrêtent. */
   turn: number;
   drawn: string;
@@ -34,37 +33,47 @@ type Item = {
 
 const clamp = (x: number) => Math.min(1, Math.max(0, x));
 
+/** Télécharge le fichier du passage et en sort les images (format décrit dans scripts/paquet-passage.mjs). */
 function load(it: Item) {
   if (it.requested) return;
   it.requested = true;
   const size = innerHeight > innerWidth ? 'm' : 'd';
-  const id = it.cv.dataset.passage;
-  const order: number[] = [];
-  for (const step of PASSES) for (let k = 0; k < PASSAGE_FRAMES; k += step) if (!order.includes(k)) order.push(k);
-  if (!order.includes(PASSAGE_FRAMES - 1)) order.splice(1, 0, PASSAGE_FRAMES - 1); // l'arrivée, tôt
-  let next = 0;
   const turn = it.turn;
-  const loadNext = () => {
-    if (next >= order.length || turn !== it.turn) return;
-    const k = order[next++];
-    const img = new Image();
-    img.decoding = 'async';
-    img.onload = () => {
+  it.abort = new AbortController();
+  fetch(asset(`passages/${it.cv.dataset.passage}-${size}.bin`), { signal: it.abort.signal })
+    .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
+    .then((buf) => {
       if (turn !== it.turn) return;
-      it.imgs[k] = img;
-      it.drawn = '';
-      loadNext();
-    };
-    img.onerror = loadNext;
-    img.src = asset(`passages/${id}/${size}-${String(k).padStart(2, '0')}.webp`);
-  };
-  for (let n = 0; n < 3; n++) loadNext();
+      const view = new DataView(buf);
+      const count = Math.min(view.getUint32(0, true), PASSAGE_FRAMES);
+      let at = 4 + 4 * view.getUint32(0, true);
+      for (let k = 0; k < count; k++) {
+        const length = view.getUint32(4 + 4 * k, true);
+        const url = URL.createObjectURL(new Blob([buf.slice(at, at + length)], { type: 'image/webp' }));
+        at += length;
+        const img = new Image();
+        img.decoding = 'async';
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          if (turn !== it.turn) return;
+          it.imgs[k] = img;
+          it.drawn = '';
+        };
+        img.onerror = () => URL.revokeObjectURL(url);
+        img.src = url;
+      }
+    })
+    .catch(() => {
+      // Pas de passage : l'affiche ou la vidéo reste à l'écran, et un nouvel essai aura lieu au prochain passage.
+      if (turn === it.turn) it.requested = false;
+    });
 }
 
 /** Loin de l'écran, les images sont rendues : la mémoire d'un téléphone ne tient pas douze passages décodés. */
 function unload(it: Item) {
   if (!it.requested) return;
   it.turn++;
+  it.abort?.abort();
   it.requested = false;
   it.imgs = [];
   it.drawn = '';

@@ -15,7 +15,7 @@
       ]
     },
     {
-      "source": "/(video|img|frames|cartes)/(.*)",
+      "source": "/(video|img|frames|passages|cartes)/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
