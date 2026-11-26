@@ -31,9 +31,16 @@
   --track-k: 0.34em;
   --gl: max(22px, env(safe-area-inset-left, 0px));
   --gr: max(22px, env(safe-area-inset-right, 0px));
+  /* Marges du contenu : celles de l'écran, élargies quand le fil du récit occupe le bord (voir « Le fil du récit »).
+     --cs et --ce sont les mêmes dans le sens de lecture (début, fin). */
+  --cl: var(--gl);
+  --cr: var(--gr);
+  --cs: var(--cl);
+  --ce: var(--cr);
   --ease: cubic-bezier(0.22, 0.8, 0.2, 1);
   --ease-io: cubic-bezier(0.7, 0, 0.2, 1);
-  --wrap: 1280px;
+  /* La colonne fait 1280 px jusqu'à 1440 px d'écran, puis s'élargit avec lui (1544 px à 1920, 1880 px au plus). */
+  --wrap: clamp(1280px, 1280px + (100vw - 1440px) * 0.55, 1880px);
   --navh: 68px;
   color-scheme: light;
 }
@@ -42,6 +49,8 @@ html[dir='rtl'] {
   --body: 'IBM Plex Sans Arabic', 'Jost', 'Noto Sans Arabic', Tahoma, sans-serif;
   --track: 0em;
   --track-k: 0em;
+  --cs: var(--cr);
+  --ce: var(--cl);
 }
 
 *,
@@ -77,7 +86,7 @@ body {
   color: var(--encre);
   font-family: var(--body);
   font-weight: 300;
-  font-size: 17px;
+  font-size: max(17px, 0.76vw);
   line-height: 1.7;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -87,7 +96,7 @@ html.menu-open body {
   overflow: hidden;
 }
 html[dir='rtl'] body {
-  font-size: 18px;
+  font-size: max(18px, 0.8vw);
   line-height: 1.85;
 }
 h1,
@@ -303,6 +312,7 @@ html[dir='rtl'] .btn {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 44px;
   min-height: 44px;
   background: none;
   border: 0;
@@ -354,6 +364,7 @@ html[dir='rtl'] .menub {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 44px;
   min-height: 44px;
   background: none;
   border: 0;
@@ -402,7 +413,7 @@ html[dir='rtl'] .menub {
   background: var(--pierre);
 }
 .lang li a small {
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.18em;
   color: var(--gris);
 }
@@ -414,8 +425,8 @@ html[dir='rtl'] .menub {
   color: var(--bx);
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  padding: calc(var(--navh) + 32px) var(--gr) 40px var(--gl);
+  padding: calc(var(--navh) + 32px + env(safe-area-inset-top, 0px)) var(--gr)
+    calc(40px + env(safe-area-inset-bottom, 0px)) var(--gl);
   overflow-y: auto;
   opacity: 0;
   visibility: hidden;
@@ -432,9 +443,13 @@ html[dir='rtl'] .menub {
   gap: 2px;
   max-width: var(--wrap);
   width: 100%;
-  margin: 0 auto;
+  /* Marges automatiques : le menu est centré tant qu'il tient dans l'écran, et défile depuis le haut sinon. */
+  margin: auto auto 0;
 }
 .mmenu nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   font-family: var(--display);
   font-size: clamp(32px, 4.6vw, 64px);
   line-height: 1.25;
@@ -453,13 +468,15 @@ html[dir='rtl'] .menub {
   flex-wrap: wrap;
   max-width: var(--wrap);
   width: 100%;
-  margin: 40px auto 0;
+  margin: 40px auto auto;
   padding-top: 20px;
   border-top: 1px solid var(--filet);
 }
 .mmenu .ml a {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  min-width: 44px;
   min-height: 44px;
   font-size: 15px;
   color: var(--gris);
@@ -506,15 +523,17 @@ html[dir='rtl'] .menub {
 .hero .pin {
   position: sticky;
   top: 0;
+  /* dvh : quand la barre du navigateur mobile se replie, la scène s'agrandit avec l'écran au lieu de laisser une bande vide. */
   height: 100vh;
   height: 100svh;
+  height: 100dvh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   align-items: center;
   text-align: center;
-  padding: 0 var(--gr) calc(9vh + env(safe-area-inset-bottom, 0px)) var(--gl);
+  padding: 0 var(--gr) calc(max(9vh, 68px) + env(safe-area-inset-bottom, 0px)) var(--gl);
 }
 .hero .door {
   position: absolute;
@@ -565,7 +584,7 @@ html[dir='rtl'] .menub {
 .hero h1 {
   margin-top: clamp(18px, 2.2vw, 28px);
   color: var(--pierre);
-  font-size: clamp(19px, 2vw, 28px);
+  font-size: clamp(19px, 2vw, max(28px, 1.3vw));
   line-height: 1.35;
   letter-spacing: 0;
   max-width: 30ch;
@@ -580,11 +599,16 @@ html[dir='rtl'] .hero h1 {
 .devise {
   font-family: var(--display);
   font-weight: 400;
-  font-size: clamp(46px, 7.4vw, 118px);
+  font-size: clamp(46px, 7.4vw, max(118px, 6.2vw));
   line-height: 0.98;
   letter-spacing: -0.018em;
   color: var(--pierre);
   text-wrap: balance;
+}
+/* La devise est en anglais dans toutes les langues : en arabe, ses mots restent dans l'ordre de lecture latin. */
+html[dir='rtl'] .devise,
+html[dir='rtl'] .pied__devise {
+  direction: ltr;
 }
 .devise em {
   color: var(--pierre);
@@ -595,7 +619,7 @@ html[dir='rtl'] .hero h1 {
 .hero .suite {
   margin-top: clamp(18px, 2.2vw, 28px);
   font-family: var(--display);
-  font-size: clamp(19px, 2vw, 28px);
+  font-size: clamp(19px, 2vw, max(28px, 1.3vw));
   line-height: 1.35;
   color: var(--pierre);
   max-width: 30ch;
@@ -654,7 +678,7 @@ main {
 .sec {
   position: relative;
   background: var(--papier);
-  padding: clamp(88px, 12vw, 180px) var(--gr) clamp(88px, 12vw, 180px) var(--gl);
+  padding: clamp(88px, 12vw, 180px) var(--cr) clamp(88px, 12vw, 180px) var(--cl);
 }
 .sec.pierre {
   background: var(--pierre);
@@ -678,7 +702,7 @@ main {
   margin-bottom: 26px;
 }
 h2 {
-  font-size: clamp(34px, 4.4vw, 68px);
+  font-size: clamp(34px, 4.4vw, max(68px, 3.5vw));
   line-height: 1.07;
   letter-spacing: -0.01em;
 }
@@ -692,7 +716,7 @@ html[dir='rtl'] h2 {
 }
 .lead {
   margin-top: 28px;
-  font-size: clamp(17px, 1.25vw, 19px);
+  font-size: clamp(17px, 1.25vw, max(19px, 0.86vw));
   line-height: 1.75;
   max-width: 56ch;
 }
@@ -771,7 +795,7 @@ html[dir='rtl'] .index a::before {
 .index strong {
   font-family: var(--display);
   font-weight: 400;
-  font-size: clamp(24px, 2.5vw, 36px);
+  font-size: clamp(24px, 2.5vw, max(36px, 1.75vw));
   line-height: 1.2;
   color: var(--noir);
   transition: color 0.4s var(--ease);
@@ -790,7 +814,6 @@ html[dir='rtl'] .index a::before {
   color: var(--pierre);
 }
 .film .scene__pin {
-  min-height: 520px;
   background: var(--noir);
 }
 .film video {
@@ -813,18 +836,18 @@ html[dir='rtl'] .index a::before {
     linear-gradient(
       0deg,
       rgba(var(--noir-rgb), 0.86) 0%,
-      rgba(var(--noir-rgb), 0.7) 22%,
-      rgba(var(--noir-rgb), 0.4) 38%,
-      rgba(var(--noir-rgb), 0) 60%
+      rgba(var(--noir-rgb), 0.7) max(22%, 150px),
+      rgba(var(--noir-rgb), 0.4) max(38%, 260px),
+      rgba(var(--noir-rgb), 0) max(60%, 420px)
     ),
     linear-gradient(180deg, rgba(var(--noir-rgb), 0.5) 0, rgba(var(--noir-rgb), 0) 170px);
 }
 .film .cap {
   position: absolute;
   z-index: 2;
-  inset-inline-start: max(var(--gl), calc((100vw - var(--wrap)) / 2));
+  inset-inline-start: max(var(--cs), calc((100vw - var(--wrap)) / 2));
   bottom: calc(64px + env(safe-area-inset-bottom, 0px));
-  width: min(36rem, calc(100% - 44px));
+  width: min(max(36rem, 30vw), calc(100% - var(--cs) - var(--ce)));
   text-shadow: 0 1px 16px rgba(var(--noir-rgb), 0.35);
 }
 .film .k {
@@ -833,7 +856,7 @@ html[dir='rtl'] .index a::before {
 .film h3 {
   margin-top: 14px;
   color: var(--pierre);
-  font-size: clamp(34px, 3.9vw, 60px);
+  font-size: clamp(34px, 3.9vw, max(60px, 3.1vw));
 }
 .film h3 em {
   color: var(--pierre);
@@ -841,7 +864,7 @@ html[dir='rtl'] .index a::before {
 .film .ln {
   margin-top: 12px;
   max-width: 44ch;
-  font-size: 16px;
+  font-size: max(16px, 0.74vw);
   line-height: 1.6;
   color: var(--pierre);
 }
@@ -852,7 +875,7 @@ html[dir='rtl'] .index a::before {
 .film .coin {
   position: absolute;
   z-index: 2;
-  inset-inline-end: max(var(--gr), calc((100vw - var(--wrap)) / 2));
+  inset-inline-end: max(var(--ce), calc((100vw - var(--wrap)) / 2));
   bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   display: grid;
   justify-items: end;
@@ -870,7 +893,7 @@ html[dir='rtl'] .index a::before {
 /* Le logotype reste dans l'angle de chaque film : discret, toujours là */
 .griffe {
   display: block;
-  width: clamp(60px, 5.2vw, 80px);
+  width: clamp(60px, 5.2vw, max(80px, 4.2vw));
   opacity: 0.5;
 }
 .film .note {
@@ -890,7 +913,7 @@ html[dir='rtl'] .index a::before {
   position: relative;
   background: var(--bx);
   color: var(--pierre);
-  padding: clamp(96px, 12vw, 180px) var(--gr) clamp(96px, 12vw, 180px) var(--gl);
+  padding: clamp(96px, 12vw, 180px) var(--cr) clamp(96px, 12vw, 180px) var(--cl);
   overflow: hidden;
 }
 .rituel::before {
@@ -909,7 +932,7 @@ html[dir='rtl'] .index a::before {
 }
 .rituel h2 {
   color: var(--pierre);
-  font-size: clamp(32px, 3.8vw, 58px);
+  font-size: clamp(32px, 3.8vw, max(58px, 3vw));
 }
 .rituel h2 em {
   color: var(--pierre);
@@ -950,7 +973,8 @@ html[dir='rtl'] .index a::before {
 .arche {
   --fond: var(--bx);
   position: relative;
-  width: min(100%, 440px);
+  /* Jamais plus haute que l'écran (téléphone couché, fenêtre basse) ; plus grande sur très grand écran. */
+  width: min(100%, max(440px, 21vw), (100svh - var(--navh) - 40px) * 0.75);
   aspect-ratio: 3/4;
   margin-inline: auto;
   border-radius: 999px 999px 0 0;
@@ -1107,7 +1131,7 @@ form {
 }
 .f label {
   font-weight: 400;
-  font-size: 10.5px;
+  font-size: 11px;
   letter-spacing: var(--track);
   text-transform: uppercase;
   color: var(--gris);
@@ -1245,6 +1269,7 @@ html[dir='rtl'] .f input[dir='ltr'] {
   margin-top: 30px;
   font-size: 14px;
   color: rgba(var(--pierre-rgb), 0.86);
+  text-wrap: balance;
 }
 .pied nav {
   display: flex;
@@ -1447,20 +1472,9 @@ html:not(.js) .rideau {
   .fab {
     display: inline-flex;
   }
-  .promises,
-  .fhead,
-  .two,
-  .rituel .two {
+  /* Questions : une colonne. La maison, le rituel et les en-têtes gardent deux colonnes jusqu'à 760 px. */
+  .two {
     grid-template-columns: 1fr;
-  }
-  .promises {
-    gap: 0;
-  }
-  .promises div {
-    padding: 24px 0;
-  }
-  .fhead .lead {
-    margin-top: 6px;
   }
   .film .cap {
     bottom: calc(92px + env(safe-area-inset-bottom, 0px));
@@ -1476,17 +1490,41 @@ html:not(.js) .rideau {
   .fleet {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .arche {
-    width: min(78%, 380px);
-    margin-top: 8px;
-  }
   .hero .pin {
-    padding-bottom: calc(11vh + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(max(11vh, 68px) + env(safe-area-inset-bottom, 0px));
+  }
+}
+/* Écran couché (téléphone, petite tablette) : les quatre voitures sur une ligne, chacune tient dans l'écran. */
+@media (max-width: 1020px) and (min-width: 640px) and (orientation: landscape) {
+  .fleet {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 @media (max-width: 760px) {
   body {
     font-size: 16px;
+  }
+  .promises,
+  .fhead,
+  .rituel .two {
+    grid-template-columns: 1fr;
+  }
+  .promises {
+    gap: 0;
+  }
+  .promises div {
+    padding: 24px 0;
+  }
+  .fhead .lead {
+    margin-top: 6px;
+  }
+  .arche {
+    width: min(78%, 380px, (100svh - var(--navh) - 40px) * 0.75);
+    margin-top: 8px;
+  }
+  /* « Faire une demande » tient sur une ligne à 320 px */
+  .mmenu nav a {
+    font-size: clamp(27px, 8.6vw, 32px);
   }
   .menub span {
     position: absolute;
@@ -1545,7 +1583,7 @@ html:not(.js) .rideau {
     grid-template-columns: 1fr;
   }
   .card {
-    padding: 26px 20px;
+    padding: 26px clamp(14px, 5vw, 20px);
   }
   .send .btn {
     width: 100%;
@@ -1571,6 +1609,39 @@ html:not(.js) .rideau {
   .hero .k::before {
     display: none;
   }
+  .hero .btn {
+    margin-top: 18px;
+  }
+  /* Menu : deux colonnes, pour tout voir sans défiler */
+  .mmenu {
+    padding-top: calc(var(--navh) + 8px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+  .mmenu nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(4, auto);
+    grid-auto-flow: column;
+    column-gap: 32px;
+  }
+  .mmenu nav a {
+    font-size: clamp(24px, 7svh, 32px);
+  }
+  .mmenu .ml {
+    margin-top: 12px;
+    padding-top: 6px;
+  }
+  /* Le bouton flottant se range dans l'angle : il ne coupe plus le texte des scènes */
+  .fab {
+    left: auto;
+    inset-inline-end: var(--ce);
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    min-height: 44px;
+    padding: 0 20px;
+    transform: translateY(160%);
+  }
+  .fab.on {
+    transform: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1578,6 +1649,11 @@ html:not(.js) .rideau {
     scroll-behavior: auto;
   }
   .hero {
+    height: 100vh;
+    height: 100svh;
+  }
+  /* Sans épinglage, la hauteur ne suit pas la barre du navigateur : la page ne bouge pas sous le doigt. */
+  .hero .pin {
     height: 100vh;
     height: 100svh;
   }
@@ -1614,7 +1690,7 @@ html:not(.js) .rideau {
 }
 .maison__vue {
   justify-self: center;
-  width: min(100%, 440px);
+  width: min(100%, max(440px, 21vw), (100svh - var(--navh) - 40px) * 0.75);
 }
 .maison__cadre {
   position: relative;
@@ -1655,7 +1731,7 @@ html:not(.js) .rideau {
   overflow: hidden;
   background: var(--lie);
   color: var(--pierre);
-  padding: clamp(96px, 12vw, 180px) var(--gr) clamp(80px, 9vw, 140px) var(--gl);
+  padding: clamp(96px, 12vw, 180px) var(--cr) clamp(80px, 9vw, 140px) var(--cl);
 }
 .jeu::before {
   content: '';
@@ -1685,7 +1761,7 @@ html:not(.js) .rideau {
   color: rgba(var(--pierre-rgb), 0.88);
 }
 .tapis {
-  --w: clamp(140px, 14.4vw, 232px);
+  --w: clamp(140px, 14.4vw, max(232px, 11.6vw));
   /* L'éventail s'ouvre un peu plus quand le tapis passe au centre de l'écran */
   --pas: calc(12deg - var(--drift, 0) * var(--drift, 0) * 4deg);
   position: relative;
@@ -2023,7 +2099,7 @@ html[dir='rtl'] .filtres button {
   letter-spacing: 0;
 }
 .filtres sup {
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 0.06em;
   color: var(--gris);
   transition: color 0.4s ease;
@@ -2049,6 +2125,8 @@ html[dir='rtl'] .filtres button {
   position: relative;
   grid-column: span 4;
   min-height: 0;
+  /* Les bulles s'adaptent à la largeur de la tuile, pas à celle de l'écran (voir @container plus bas) */
+  container-type: inline-size;
 }
 .oeuvre.large {
   grid-column: span 8;
@@ -2132,7 +2210,7 @@ html[dir='rtl'] .filtres button {
   gap: 6px;
 }
 .oeuvre__nom small {
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: var(--track-k);
   text-transform: uppercase;
   color: rgba(var(--pierre-rgb), 0.82);
@@ -2144,7 +2222,7 @@ html[dir='rtl'] .oeuvre__nom small {
 .oeuvre__nom b {
   font-family: var(--display);
   font-weight: 400;
-  font-size: clamp(20px, 2vw, 30px);
+  font-size: clamp(20px, 2vw, max(30px, 1.5vw));
   line-height: 1.1;
 }
 /* Un filet d'or se tire sous le nom au survol */
@@ -2232,6 +2310,10 @@ html[dir='rtl'] .oeuvre__nom::after {
   line-height: 1.3;
   letter-spacing: 0.04em;
   white-space: nowrap;
+  /* Un rôle très long est abrégé plutôt que de sortir de la tuile */
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .bulles li:first-child {
   background: var(--bx);
@@ -2266,11 +2348,58 @@ html[dir='rtl'] .oeuvre .bulles li {
   transform: none;
   transition-delay: calc(var(--b) * 70ms);
 }
+/* Sur une tuile étroite, les bulles dépliées prennent la place du nom plutôt que de le recouvrir. */
+.oeuvre__nom {
+  transition: opacity 0.35s ease;
+}
+@media (max-width: 760px) {
+  .oeuvre.bulles-on .oeuvre__nom,
+  .oeuvre:focus-within .oeuvre__nom {
+    opacity: 0;
+  }
+}
 @media (hover: hover) {
   .oeuvre:hover .bulles li {
     opacity: 1;
     transform: none;
     transition-delay: calc(var(--b) * 70ms);
+  }
+}
+/* Petite tuile : les bulles prennent la place du nom, sur une image assombrie, au lieu de le recouvrir. */
+.oeuvre__nom {
+  transition: opacity 0.35s ease;
+}
+@container (max-width: 300px) {
+  .oeuvre.bulles-on .oeuvre__nom,
+  .oeuvre:focus-within .oeuvre__nom {
+    opacity: 0;
+  }
+  .oeuvre.bulles-on .oeuvre__ouvrir::after,
+  .oeuvre:focus-within .oeuvre__ouvrir::after {
+    background: rgba(var(--noir-rgb), 0.5);
+  }
+  @media (hover: hover) {
+    .oeuvre:hover .oeuvre__nom {
+      opacity: 0;
+    }
+    .oeuvre:hover .oeuvre__ouvrir::after {
+      background: rgba(var(--noir-rgb), 0.5);
+    }
+  }
+}
+/* Au doigt, le bouton « + » fait 44 px */
+@media (pointer: coarse) {
+  .oeuvre__plus {
+    width: 44px;
+    height: 44px;
+  }
+  .oeuvre__plus i::before,
+  .oeuvre__plus i::after {
+    left: 15px;
+    top: 21px;
+  }
+  .oeuvre .bulles {
+    top: calc(clamp(12px, 1.6vw, 22px) + 54px);
   }
 }
 .visionneuse .bulles {
@@ -2376,18 +2505,25 @@ html[dir='rtl'] .oeuvre .bulles li {
   height: 100%;
   max-height: none;
   margin: 0;
-  padding: clamp(64px, 8vh, 92px) clamp(16px, 5vw, 80px) clamp(84px, 11vh, 112px);
+  padding: calc(clamp(64px, 8vh, 92px) + env(safe-area-inset-top, 0px))
+    max(clamp(16px, 5vw, 80px), env(safe-area-inset-right, 0px))
+    calc(clamp(18px, 3vh, 34px) + env(safe-area-inset-bottom, 0px))
+    max(clamp(16px, 5vw, 80px), env(safe-area-inset-left, 0px));
   border: 0;
   background: rgba(var(--noir-rgb), 0.95);
   color: var(--pierre);
-  overflow: hidden;
+  /* Si la légende est plus longue que prévu, la visionneuse défile au lieu de couper ou de superposer. */
+  overflow: hidden auto;
 }
 .visionneuse::backdrop {
   background: rgba(var(--noir-rgb), 0.6);
 }
 .visionneuse[open] {
+  /* Deux rangées : l'œuvre, centrée dans la place libre, puis les flèches. */
   display: grid;
+  grid-template-rows: 1fr auto;
   place-items: center;
+  row-gap: clamp(22px, 3.1vh, 34px);
   animation: visionneuse 0.5s var(--ease);
 }
 @keyframes visionneuse {
@@ -2424,6 +2560,10 @@ html[dir='rtl'] .oeuvre .bulles li {
   max-height: calc(100vh - 400px);
   max-height: calc(100dvh - 400px);
 }
+/* Un site porte une barre de fenêtre et un lien en plus : sur grand écran, son image leur laisse la place. */
+.visionneuse__media.fenetre img {
+  max-height: calc(100dvh - 400px - clamp(0px, (100dvh - 900px) * 0.25, 48px));
+}
 .visionneuse__media.fenetre {
   padding-top: 34px;
   border-radius: 8px;
@@ -2436,7 +2576,7 @@ html[dir='rtl'] .oeuvre .bulles li {
   text-align: center;
 }
 .visionneuse figcaption small {
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: var(--track-k);
   text-transform: uppercase;
   color: var(--or);
@@ -2455,9 +2595,6 @@ html[dir='rtl'] .oeuvre .bulles li {
   color: var(--pierre);
 }
 .visionneuse__nav {
-  position: absolute;
-  bottom: clamp(18px, 3vh, 34px);
-  inset-inline: 0;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -2502,8 +2639,8 @@ html[dir='rtl'] .oeuvre .bulles li {
 }
 .visionneuse__fermer {
   position: absolute;
-  top: clamp(12px, 2vh, 22px);
-  inset-inline-end: clamp(12px, 2vw, 26px);
+  top: calc(clamp(12px, 2vh, 22px) + env(safe-area-inset-top, 0px));
+  inset-inline-end: max(clamp(12px, 2vw, 26px), env(safe-area-inset-right, 0px), env(safe-area-inset-left, 0px));
 }
 .visionneuse__fermer i::before,
 .visionneuse__fermer i::after {
@@ -2546,6 +2683,19 @@ html[dir='rtl'] .oeuvre .bulles li {
   .oeuvres.filtre .oeuvre .oeuvre__image {
     aspect-ratio: 16 / 10;
   }
+  /* Écran couché : aucune tuile plus haute que l'écran */
+  .oeuvre .oeuvre__image {
+    max-height: calc(100svh - var(--navh) - 24px);
+  }
+  /* Les bulles prennent la place du nom (comme sur les petites tuiles) */
+  .oeuvre.bulles-on .oeuvre__nom,
+  .oeuvre:focus-within .oeuvre__nom {
+    opacity: 0;
+  }
+  .oeuvre.bulles-on .oeuvre__ouvrir::after,
+  .oeuvre:focus-within .oeuvre__ouvrir::after {
+    background: rgba(var(--noir-rgb), 0.5);
+  }
   .lecture {
     width: 34px;
     height: 34px;
@@ -2553,6 +2703,74 @@ html[dir='rtl'] .oeuvre .bulles li {
   .lecture::before {
     left: 13px;
     top: 10px;
+  }
+}
+/* Téléphone : une œuvre par ligne, à ses proportions. Deux tuiles de 150 px ne montraient ni l'image ni les bulles. */
+@media (max-width: 560px) {
+  /* Les quatre filtres ne tiennent pas sur une ligne : deux rangées égales plutôt qu'un filtre seul à la ligne */
+  .filtres {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .filtres button {
+    justify-content: center;
+    padding: 0 10px;
+  }
+  .oeuvres {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .oeuvre,
+  .oeuvre.large,
+  .oeuvre.demi,
+  .oeuvres.filtre .oeuvre {
+    grid-column: auto;
+  }
+  .oeuvre .oeuvre__image {
+    aspect-ratio: 4 / 3;
+  }
+}
+/* Écran couché et bas : l'image à gauche sur toute la hauteur, la légende et les flèches à droite. */
+@media (max-height: 560px) and (orientation: landscape) {
+  .visionneuse {
+    --legende: clamp(200px, 30vw, 280px);
+    padding: calc(16px + env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right, 0px))
+      calc(16px + env(safe-area-inset-bottom, 0px)) max(20px, env(safe-area-inset-left, 0px));
+  }
+  .visionneuse[open] {
+    grid-template-columns: auto var(--legende);
+    /* La première rangée garde toujours la place du bouton « Fermer » au-dessus de la légende. */
+    grid-template-rows: minmax(56px, 1fr) auto auto 1fr;
+    justify-content: center;
+    gap: 10px 30px;
+  }
+  .visionneuse figure {
+    display: contents;
+  }
+  .visionneuse__media {
+    grid-area: 1 / 1 / 5 / 2;
+    animation: oeuvre-entre 0.7s var(--ease);
+  }
+  .visionneuse__media img,
+  .visionneuse__media video {
+    max-width: calc(100vw - 70px - var(--legende) - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+    max-height: calc(100dvh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  }
+  .visionneuse__media.fenetre img {
+    max-height: calc(100dvh - 66px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  }
+  .visionneuse figcaption {
+    grid-area: 2 / 2;
+    justify-self: stretch;
+    justify-items: start;
+    text-align: start;
+    animation: oeuvre-entre 0.7s var(--ease);
+  }
+  .visionneuse .bulles {
+    justify-content: flex-start;
+  }
+  .visionneuse__nav {
+    grid-area: 3 / 2;
+    justify-self: start;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -2564,7 +2782,9 @@ html[dir='rtl'] .oeuvre .bulles li {
     transform: none;
   }
   .visionneuse[open],
-  .visionneuse figure {
+  .visionneuse figure,
+  .visionneuse__media,
+  .visionneuse figcaption {
     animation: none;
   }
 }
@@ -2675,7 +2895,7 @@ html[dir='rtl'] .oeuvre .bulles li {
   font-size: 15px;
 }
 .etapes span {
-  font-size: 10.5px;
+  font-size: 11px;
   letter-spacing: var(--track);
   text-transform: uppercase;
   line-height: 1.4;
@@ -2709,7 +2929,7 @@ html[dir='rtl'] .etape {
 .f__label {
   padding: 0;
   font-weight: 400;
-  font-size: 10.5px;
+  font-size: 11px;
   letter-spacing: var(--track);
   text-transform: uppercase;
   color: var(--gris);
@@ -2791,16 +3011,8 @@ html[dir='rtl'] .f__label {
 }
 
 @media (max-width: 1020px) {
-  .maison__haut,
   .demande .two {
     grid-template-columns: 1fr;
-  }
-  .maison__vue {
-    width: min(86%, 400px);
-  }
-  .maison__vue figcaption {
-    margin-inline: auto;
-    text-align: center;
   }
   .billet {
     width: min(62%, 250px);
@@ -2808,8 +3020,19 @@ html[dir='rtl'] .f__label {
   }
 }
 @media (max-width: 760px) {
+  .maison__haut {
+    grid-template-columns: 1fr;
+  }
+  .maison__vue {
+    width: min(86%, 400px, (100svh - var(--navh) - 40px) * 0.75);
+  }
+  .maison__vue figcaption {
+    margin-inline: auto;
+    text-align: center;
+  }
   .tapis {
-    --w: clamp(88px, 24.5vw, 132px);
+    /* 76 px au plus étroit : à 320 px, l'éventail des six cartes tient dans l'écran */
+    --w: clamp(76px, 24.5vw, 132px);
     --pas: calc(10deg - var(--drift, 0) * var(--drift, 0) * 3deg);
   }
   .main {
@@ -2819,16 +3042,34 @@ html[dir='rtl'] .f__label {
     bottom: 36px;
     transform-origin: 50% 240%;
   }
+  /* Une carte prise au clavier se lève moins haut : à 320 px, elle reste dans l'écran */
+  .tapis.pose .main li:focus-within:not(.choisie) {
+    transform: rotate(var(--a)) translate3d(0, -20px, 0);
+  }
   .tapis.pose .main li.choisie button {
-    transform: scale(1.5);
+    transform: scale(1.6);
   }
   .choix span {
     padding: 0 14px;
     font-size: 15px;
   }
+  .etapes {
+    gap: 8px;
+  }
   .etapes span {
-    font-size: 9.5px;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.06em;
+  }
+}
+/* Écran bas : le tapis entier tient sous la barre */
+@media (max-height: 520px) {
+  .tapis {
+    --w: clamp(96px, (100svh - 200px) / 1.4, 140px);
+  }
+  .main {
+    height: calc(var(--w) * 1.4 + 110px);
+  }
+  .main li {
+    bottom: 30px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -2879,7 +3120,8 @@ html[dir='rtl'] .f__label {
     font-size: 12.5px;
   }
   .billet .k {
-    font-size: 9px;
+    font-size: 11px;
+    letter-spacing: 0.2em;
   }
   .billet__sceau {
     width: 68px;
@@ -2897,7 +3139,7 @@ html[dir='rtl'] .f__label {
 .chapitre .scene__pin {
   display: grid;
   place-items: center;
-  padding: var(--navh) var(--gr) 0 var(--gl);
+  padding: calc(var(--navh) + env(safe-area-inset-top, 0px)) var(--gr) 0 var(--gl);
   background-color: var(--noir);
   background-position: center;
   background-size: cover;
@@ -2937,14 +3179,15 @@ html[dir='rtl'] .f__label {
 .chapitre h2 {
   margin: 26px auto 0;
   max-width: 11ch;
-  font-size: clamp(50px, 8.4vw, 132px);
+  /* Le titre suit aussi la hauteur : sur un écran bas, il laisse la place à la phrase qui le suit. */
+  font-size: clamp(50px, min(8.4vw, 17svh), max(132px, 6.9vw));
   line-height: 0.98;
   letter-spacing: -0.018em;
 }
 .chapitre .lead {
   margin-inline: auto;
   max-width: 38ch;
-  font-size: clamp(17px, 1.4vw, 21px);
+  font-size: clamp(17px, 1.4vw, max(21px, 1.05vw));
   line-height: 1.7;
 }
 .film h3 {
@@ -2959,7 +3202,7 @@ html[dir='rtl'] .film h3 {
 /* Un film sur deux porte son texte de l'autre côté */
 .film.flip .cap {
   inset-inline-start: auto;
-  inset-inline-end: max(var(--gr), calc((100vw - var(--wrap)) / 2));
+  inset-inline-end: max(var(--ce), calc((100vw - var(--wrap)) / 2));
   text-align: end;
 }
 .film.flip .cap .ln {
@@ -2967,7 +3210,7 @@ html[dir='rtl'] .film h3 {
 }
 .film.flip .coin {
   inset-inline-end: auto;
-  inset-inline-start: max(var(--gl), calc((100vw - var(--wrap)) / 2));
+  inset-inline-start: max(var(--cs), calc((100vw - var(--wrap)) / 2));
   justify-items: start;
 }
 
@@ -2997,7 +3240,7 @@ html[dir='rtl'] .film h3 {
 
 @media (max-width: 1020px) {
   .film.flip .cap {
-    inset-inline-start: var(--gl);
+    inset-inline-start: var(--cs);
     inset-inline-end: auto;
     text-align: start;
   }
@@ -3006,13 +3249,13 @@ html[dir='rtl'] .film h3 {
   }
   .film.flip .coin {
     inset-inline-start: auto;
-    inset-inline-end: var(--gr);
+    inset-inline-end: var(--ce);
     justify-items: end;
   }
 }
 @media (max-width: 760px) {
   .chapitre h2 {
-    font-size: clamp(44px, 13vw, 64px);
+    font-size: clamp(44px, min(13vw, 17svh), 64px);
   }
   .epilogue {
     height: 200vh;
@@ -3022,6 +3265,59 @@ html[dir='rtl'] .film h3 {
   .epilogue {
     height: 100vh;
     height: 100svh;
+  }
+}
+/* Écran bas (téléphone couché, fenêtre réduite) : les scènes se resserrent pour tenir entre la barre et le bas. */
+@media (max-height: 520px) {
+  .chapitre .k {
+    gap: 12px;
+  }
+  .chapitre .k::before {
+    height: 22px;
+  }
+  .chapitre h2 {
+    margin-top: 12px;
+    max-width: 18ch;
+  }
+  .chapitre .lead {
+    margin-top: 12px;
+    max-width: 54ch;
+    font-size: 16px;
+    line-height: 1.55;
+  }
+  .film .cap {
+    bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+  }
+  .film h3 {
+    margin-top: 8px;
+    font-size: clamp(26px, 9svh, 44px);
+  }
+  .film .ln {
+    margin-top: 8px;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  .film .link {
+    margin-top: 4px;
+  }
+  .film .coin {
+    gap: 8px;
+  }
+  .griffe {
+    width: 48px;
+  }
+}
+/* … et, tant que le bouton flottant existe, le texte des films s'arrête avant lui. */
+@media (max-height: 520px) and (max-width: 1020px) {
+  .film .cap {
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    width: min(36rem, calc(100% - var(--cs) - var(--ce) - 216px));
+  }
+  .film .coin {
+    top: calc(var(--navh) + 8px + env(safe-area-inset-top, 0px));
+  }
+  .chapitre .scene__pin {
+    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -3049,8 +3345,11 @@ html[dir='rtl'] .film h3 {
 .scene__pin {
   position: sticky;
   top: 0;
+  /* La scène garde sa longueur (svh, stable) ; son cadre épinglé suit la hauteur réelle de l'écran (dvh),
+     barre du navigateur mobile repliée ou non : jamais de bande vide sous un film. */
   height: 100vh;
   height: 100svh;
+  height: 100dvh;
   overflow: hidden;
 }
 /* La scène qui part recule et s'assombrit */
@@ -3117,6 +3416,8 @@ html[dir='rtl'] .nav::after {
   }
   .scene__pin {
     position: relative;
+    height: 100vh;
+    height: 100svh;
   }
   .scene__pin::before,
   .nav::after {
@@ -3335,6 +3636,22 @@ html[dir='rtl'] .fil span {
   transform: none;
 }
 
+/* Tablette couchée : chaque repère du fil fait 44 px sous le doigt */
+@media (pointer: coarse) {
+  .fil a {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+/* Tant que le fil est affiché, le contenu des sections et le texte des films lui laissent le bord de l'écran.
+   À partir de 1424 px la colonne est déjà plus étroite que l'écran : rien ne change. */
+@media (min-width: 1021px) {
+  :root {
+    --cl: max(72px, env(safe-area-inset-left, 0px));
+    --cr: max(72px, env(safe-area-inset-right, 0px));
+  }
+}
+
 /* ───── Sommaire : l'image du chapitre dans une arche, au survol ───── */
 .index__cadre {
   position: relative;
@@ -3392,7 +3709,7 @@ html[dir='rtl'] .fil span {
   left: calc(50% + 14px);
   bottom: calc(26px + env(safe-area-inset-bottom, 0px));
   margin: 0;
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: var(--track-k);
   text-transform: uppercase;
   color: rgba(var(--pierre-rgb), 0.8);
