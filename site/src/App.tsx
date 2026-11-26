@@ -92,7 +92,7 @@ export function App({ lang }: { lang: Lang }) {
             {/* La flotte clôt le chapitre de la route. */}
             {c.id === 'route' && <Flotte d={d} />}
             {/* Ce que la maison a créé : films, visuels et sites, à la suite du film « Création & marketing ». */}
-            {c.id === 'image' && <Realisations d={d} />}
+            {c.id === 'image' && <Realisations d={d} lang={lang} />}
             {/* L'accueil à l'aéroport clôt le premier chapitre : ce n'est pas un service à part, c'est la promesse. */}
             {ci === 0 && (
               <Film

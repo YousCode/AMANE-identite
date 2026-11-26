@@ -149,6 +149,9 @@ type Extra = {
   wVisit: string;
   wClose: string;
   wFor: string;
+  wMore: string;
+  /** Ce que la maison a fait sur une réalisation : les clés sont celles de `roles` dans src/realisations.ts. */
+  wRoles: Record<string, string>;
 };
 
 export type Dict = Base & Extra;
@@ -244,6 +247,19 @@ const extra: Record<Lang, Extra> = {
     wVisit: 'Voir le site',
     wClose: 'Fermer',
     wFor: 'Pour',
+    wMore: 'Détails du projet',
+    wRoles: {
+      da: 'Direction artistique',
+      film: 'Réalisation',
+      montage: 'Montage',
+      photo: 'Photographie',
+      identite: 'Identité visuelle',
+      illustration: 'Illustration',
+      design: 'Design',
+      dev: 'Développement',
+      seo: 'Référencement',
+      social: 'Réseaux sociaux',
+    },
   },
   en: {
     metaTitle: 'Amane — Private Concierge in Paris | Luxury Cars & Chauffeurs',
@@ -329,6 +345,19 @@ const extra: Record<Lang, Extra> = {
     wVisit: 'Visit the site',
     wClose: 'Close',
     wFor: 'For',
+    wMore: 'Project details',
+    wRoles: {
+      da: 'Art direction',
+      film: 'Film direction',
+      montage: 'Editing',
+      photo: 'Photography',
+      identite: 'Visual identity',
+      illustration: 'Illustration',
+      design: 'Design',
+      dev: 'Development',
+      seo: 'SEO',
+      social: 'Social media',
+    },
   },
   es: {
     metaTitle: 'Amane — Concierge privado en París | Coches y chóferes',
@@ -417,6 +446,19 @@ const extra: Record<Lang, Extra> = {
     wVisit: 'Ver el sitio',
     wClose: 'Cerrar',
     wFor: 'Para',
+    wMore: 'Detalles del proyecto',
+    wRoles: {
+      da: 'Dirección de arte',
+      film: 'Realización',
+      montage: 'Montaje',
+      photo: 'Fotografía',
+      identite: 'Identidad visual',
+      illustration: 'Ilustración',
+      design: 'Diseño',
+      dev: 'Desarrollo',
+      seo: 'SEO',
+      social: 'Redes sociales',
+    },
   },
   ar: {
     metaTitle: 'Amane — كونسيرج خاص في باريس | سيارات فاخرة وسائقون',
@@ -498,6 +540,19 @@ const extra: Record<Lang, Extra> = {
     wVisit: 'زيارة الموقع',
     wClose: 'إغلاق',
     wFor: 'لصالح',
+    wMore: 'تفاصيل المشروع',
+    wRoles: {
+      da: 'الإدارة الفنية',
+      film: 'الإخراج',
+      montage: 'المونتاج',
+      photo: 'التصوير',
+      identite: 'الهوية البصرية',
+      illustration: 'الرسم',
+      design: 'التصميم',
+      dev: 'التطوير',
+      seo: 'تحسين الظهور في محركات البحث',
+      social: 'وسائل التواصل',
+    },
   },
 };
 
