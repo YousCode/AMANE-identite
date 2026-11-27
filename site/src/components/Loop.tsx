@@ -30,11 +30,24 @@ export function Loop({ name, portrait = '' }: { name: string; portrait?: string 
     const pick = () => (portrait && innerWidth < 761 && innerHeight > innerWidth ? portrait : name);
     let loaded = '';
     let shown = false;
+    // Dans une scène, le film attend sur sa première image qu'elle soit entièrement visible
+    // (classe « montre », src/scenes.ts) : c'est celle sur laquelle le passage s'est arrêté.
+    const scene = v.closest('.scene');
+    let montre = !scene || scene.classList.contains('montre');
     // Lecture seulement si la vidéo est chargée, visible, et l'onglet au premier plan.
     const sync = () => {
-      if (loaded && shown && !document.hidden) v.play().catch(() => {});
+      if (loaded && shown && montre && !document.hidden) v.play().catch(() => {});
       else v.pause();
     };
+    const classes = new MutationObserver(() => {
+      const now = scene!.classList.contains('montre');
+      if (now === montre) return;
+      montre = now;
+      // Qu'elle apparaisse ou s'efface, la scène se retrouve sur sa première image.
+      if (!still && v.readyState > 0) v.currentTime = 0;
+      sync();
+    });
+    if (scene) classes.observe(scene, { attributes: true, attributeFilter: ['class'] });
 
     const poster = new IntersectionObserver(
       ([e]) => {
@@ -84,7 +97,7 @@ export function Loop({ name, portrait = '' }: { name: string; portrait?: string 
     document.addEventListener('visibilitychange', onHide);
     [poster, near, visible].forEach((o) => o.observe(v));
     return () => {
-      [poster, near, visible].forEach((o) => o.disconnect());
+      [poster, near, visible, classes].forEach((o) => o.disconnect());
       document.removeEventListener('visibilitychange', onHide);
     };
   }, [name, portrait]);

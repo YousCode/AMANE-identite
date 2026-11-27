@@ -11,7 +11,7 @@ import { reducedMotion, useScrollFrame } from './ui';
  * quelle que soit la vitesse du défilement.
  *
  *  <canvas class="passage" data-passage="p03" data-mode="chapitre">
- *    chapitre  le passage court sur toute l'ouverture du chapitre (arrivée, puis recouvrement)
+ *    chapitre  le passage occupe l'arrivée du chapitre ; son titre se lit ensuite sur la dernière image, immobile
  *    entree    le passage occupe l'arrivée du film ; la vidéo prend le relais une fois la scène en place
  *
  * Tant que les images ne sont pas là, ou avec « réduire les animations », la toile reste
@@ -180,10 +180,9 @@ export function usePassages() {
       const r = it.scene.getBoundingClientRect();
       if (r.bottom < 0 || r.top > vh) continue;
       const enter = clamp(1 - r.top / vh);
-      const leave = clamp(-r.top / (r.height / 2));
-      // Chapitre : le plan avance pendant l'arrivée et le début du recouvrement, puis s'arrête
-      // sur la première image du film suivant, qui se fond par-dessus.
-      const p = it.mode === 'chapitre' ? clamp((enter + leave) / 1.6) : clamp(enter / 0.92);
+      // Chapitre : le plan avance pendant l'arrivée, puis s'arrête sur la première image du film
+      // suivant. Le titre se lit sur cette image immobile ; le film prend ensuite le relais sans fantôme.
+      const p = it.mode === 'chapitre' ? clamp(enter / 0.95) : clamp(enter / 0.92);
       draw(it, p);
     }
   });

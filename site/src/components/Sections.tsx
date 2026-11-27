@@ -121,9 +121,6 @@ export function Chapitre({ d, lang, index, children }: Props & { index: number; 
         <div className="scene__pin" data-poster={`img/${film}-poster.jpg`}>
           <canvas className="passage" data-passage={c.passage} data-mode="chapitre" aria-hidden="true" />
           <span className="voile" aria-hidden="true" />
-          <span className="chapitre__num" aria-hidden="true">
-            {numerals(lang)[index]}
-          </span>
           <div className="wrap">
             <p className="k rv">
               {d.chap} {numerals(lang)[index]}
