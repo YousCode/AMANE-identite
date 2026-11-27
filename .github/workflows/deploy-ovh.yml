@@ -12,7 +12,8 @@
 #   Secrets   : BREVO_API_KEY, CRM_SECRET
 #
 # Facultatif : VITE_WHATSAPP_NUMBER, VITE_CONTACT_EMAIL (coordonnées affichées près du formulaire).
-# Tant que OVH_FTP_SERVER n'est pas renseignée, le déploiement est simplement ignoré.
+# Chaque valeur peut être rangée indifféremment en variable ou en secret : le déploiement lit les deux.
+# Tant que OVH_FTP_SERVER n'est renseigné nulle part, le déploiement est simplement ignoré.
 
 name: Déploiement OVH
 
@@ -32,8 +33,36 @@ permissions:
   contents: read
 
 jobs:
+  # Les secrets ne sont pas lisibles dans la condition d'un job : ce premier job regarde si l'hébergement
+  # est configuré, sans jamais afficher de valeur.
+  reglages:
+    runs-on: ubuntu-latest
+    outputs:
+      ftp: ${{ steps.lire.outputs.ftp }}
+      formulaire: ${{ steps.lire.outputs.formulaire }}
+    steps:
+      - id: lire
+        env:
+          SERVEUR: ${{ vars.OVH_FTP_SERVER || secrets.OVH_FTP_SERVER }}
+          UTILISATEUR: ${{ vars.OVH_FTP_USER || secrets.OVH_FTP_USER }}
+          MOT_DE_PASSE: ${{ secrets.OVH_FTP_PASSWORD || vars.OVH_FTP_PASSWORD }}
+          DESTINATAIRE: ${{ vars.LEAD_TO_EMAIL || secrets.LEAD_TO_EMAIL }}
+        run: |
+          ok=false; [ -n "$SERVEUR" ] && ok=true
+          echo "ftp=$ok" >> "$GITHUB_OUTPUT"
+          f=false; [ -n "$DESTINATAIRE" ] && f=true
+          echo "formulaire=$f" >> "$GITHUB_OUTPUT"
+          for n in SERVEUR UTILISATEUR MOT_DE_PASSE DESTINATAIRE; do
+            if [ -n "${!n}" ]; then echo "$n : renseigné"; else echo "$n : absent"; fi
+          done
+          if [ "$ok" = true ] && { [ -z "$UTILISATEUR" ] || [ -z "$MOT_DE_PASSE" ]; }; then
+            echo "::error::OVH_FTP_USER ou OVH_FTP_PASSWORD manque dans GitHub (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+
   deploy:
-    if: ${{ vars.OVH_FTP_SERVER != '' }}
+    needs: reglages
+    if: ${{ needs.reglages.outputs.ftp == 'true' }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -62,26 +91,26 @@ jobs:
       - name: Envoi sur OVH
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ vars.OVH_FTP_SERVER }}
-          username: ${{ vars.OVH_FTP_USER }}
-          password: ${{ secrets.OVH_FTP_PASSWORD }}
-          protocol: ${{ vars.OVH_FTP_PROTOCOL || 'ftps' }}
+          server: ${{ vars.OVH_FTP_SERVER || secrets.OVH_FTP_SERVER }}
+          username: ${{ vars.OVH_FTP_USER || secrets.OVH_FTP_USER }}
+          password: ${{ secrets.OVH_FTP_PASSWORD || vars.OVH_FTP_PASSWORD }}
+          protocol: ${{ vars.OVH_FTP_PROTOCOL || secrets.OVH_FTP_PROTOCOL || 'ftps' }}
           local-dir: site/dist-ovh/
           server-dir: www/
 
       # La configuration du formulaire : écrite par PHP lui-même (var_export), donc sans risque
       # qu'un caractère d'une valeur casse le fichier. Elle n'est jamais dans www/.
       - name: Configuration du formulaire
-        if: ${{ vars.LEAD_TO_EMAIL != '' }}
+        if: ${{ needs.reglages.outputs.formulaire == 'true' }}
         working-directory: ${{ runner.temp }}
         env:
-          LEAD_TO_EMAIL: ${{ vars.LEAD_TO_EMAIL }}
-          LEAD_FROM_EMAIL: ${{ vars.LEAD_FROM_EMAIL }}
-          LEAD_FROM_NAME: ${{ vars.LEAD_FROM_NAME }}
-          ALLOWED_ORIGINS: ${{ vars.ALLOWED_ORIGINS }}
-          CRM_URL: ${{ vars.CRM_URL }}
-          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
-          CRM_SECRET: ${{ secrets.CRM_SECRET }}
+          LEAD_TO_EMAIL: ${{ vars.LEAD_TO_EMAIL || secrets.LEAD_TO_EMAIL }}
+          LEAD_FROM_EMAIL: ${{ vars.LEAD_FROM_EMAIL || secrets.LEAD_FROM_EMAIL }}
+          LEAD_FROM_NAME: ${{ vars.LEAD_FROM_NAME || secrets.LEAD_FROM_NAME }}
+          ALLOWED_ORIGINS: ${{ vars.ALLOWED_ORIGINS || secrets.ALLOWED_ORIGINS }}
+          CRM_URL: ${{ vars.CRM_URL || secrets.CRM_URL }}
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY || vars.BREVO_API_KEY }}
+          CRM_SECRET: ${{ secrets.CRM_SECRET || vars.CRM_SECRET }}
         run: |
           mkdir -p amane-config
           php -r '
@@ -94,13 +123,13 @@ jobs:
           php -l amane-config/amane-config.php
 
       - name: Envoi de la configuration, au-dessus de www/
-        if: ${{ vars.LEAD_TO_EMAIL != '' }}
+        if: ${{ needs.reglages.outputs.formulaire == 'true' }}
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ vars.OVH_FTP_SERVER }}
-          username: ${{ vars.OVH_FTP_USER }}
-          password: ${{ secrets.OVH_FTP_PASSWORD }}
-          protocol: ${{ vars.OVH_FTP_PROTOCOL || 'ftps' }}
+          server: ${{ vars.OVH_FTP_SERVER || secrets.OVH_FTP_SERVER }}
+          username: ${{ vars.OVH_FTP_USER || secrets.OVH_FTP_USER }}
+          password: ${{ secrets.OVH_FTP_PASSWORD || vars.OVH_FTP_PASSWORD }}
+          protocol: ${{ vars.OVH_FTP_PROTOCOL || secrets.OVH_FTP_PROTOCOL || 'ftps' }}
           local-dir: ${{ runner.temp }}/amane-config/
           server-dir: ./
           state-name: .amane-config-sync-state.json
