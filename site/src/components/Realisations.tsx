@@ -14,6 +14,8 @@ export function Realisations({ d, lang }: { d: Dict; lang: Lang }) {
   const [ouverte, setOuverte] = useState(-1);
   /** La tuile dont les bulles sont dépliées au doigt ou au clavier (au survol, le CSS suffit). */
   const [bulles, setBulles] = useState('');
+  /** Les filtres n'apparaissent que s'il y a au moins deux sortes de réalisations à trier. */
+  const sortes = new Set(REALISATIONS.map((r) => r.kind)).size;
   const visibles = REALISATIONS.filter((r) => filtre < 0 || r.kind === filtre);
   const dialog = useRef<HTMLDialogElement>(null);
   /** La grille est arrivée à l'écran : ses tuiles se dévoilent l'une après l'autre. */
@@ -70,19 +72,24 @@ export function Realisations({ d, lang }: { d: Dict; lang: Lang }) {
           </div>
           <p className="lead rv">{d.wp}</p>
         </div>
-        <div className="filtres rv" role="group" aria-label={d.wk}>
-          {d.wFilters.map((label, i) => (
-            <button type="button" key={label} aria-pressed={filtre === i - 1} onClick={() => filtrer(i - 1)}>
-              {label}
-              <sup>{i === 0 ? REALISATIONS.length : REALISATIONS.filter((r) => r.kind === i - 1).length}</sup>
-            </button>
-          ))}
-        </div>
-        <ul className={`oeuvres${filtre >= 0 ? ' filtre' : ''}${arrivee ? ' vu' : ''}`} ref={grille}>
+        {sortes > 1 && (
+          <div className="filtres rv" role="group" aria-label={d.wk}>
+            {d.wFilters.map((label, i) => (
+              <button type="button" key={label} aria-pressed={filtre === i - 1} onClick={() => filtrer(i - 1)}>
+                {label}
+                <sup>{i === 0 ? REALISATIONS.length : REALISATIONS.filter((r) => r.kind === i - 1).length}</sup>
+              </button>
+            ))}
+          </div>
+        )}
+        <ul
+          className={`oeuvres${filtre >= 0 ? ' filtre' : ''}${REALISATIONS.length === 1 ? ' seule' : ''}${arrivee ? ' vu' : ''}`}
+          ref={grille}
+        >
           {visibles.map((r, i) => (
             <li
               key={r.id}
-              className={`oeuvre ${r.format}${bulles === r.id ? ' bulles-on' : ''}`}
+              className={`oeuvre ${r.format}${r.kind === 2 ? ' site' : ''}${bulles === r.id ? ' bulles-on' : ''}`}
               style={{ viewTransitionName: `oeuvre-${r.id}`, '--k': i } as CSSProperties}
             >
               <button type="button" className="oeuvre__ouvrir" onClick={() => setOuverte(i)} aria-haspopup="dialog">
