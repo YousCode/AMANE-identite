@@ -31,7 +31,7 @@ npm run format     # met en forme tout le code (Prettier)
 | `public/frames/`                                      | Les 48 images de la porte qui s'ouvre au défilement                                                                                                                                                                                                                          |
 | `public/video/`, `public/img/`                        | Films des services en 1080p (MP4 + WebM), affiches, photos de la flotte, motif Arcades                                                                                                                                                                                       |
 | `src/realisations.ts`, `public/realisations/`         | Réalisations montrées dans la partie Création & marketing : la liste, et leurs images                                                                                                                                                                                        |
-| `public/cartes/`                                      | Figures du jeu de cartes Amane, rendues depuis le générateur du jeu                                                                                                                                                                                                          |
+| `public/cartes/jeu/`                                  | Les 54 cartes du jeu Amane et leur dos, rendues depuis le générateur du jeu                                                                                                                                                                                                  |
 | `scripts/encoder-films.sh`                            | Ré-encode les originaux Higgsfield pour le web                                                                                                                                                                                                                               |
 | `src/brand/`                                          | Logos copiés depuis `../logos/svg/` (couleur pilotée par le CSS)                                                                                                                                                                                                             |
 
@@ -144,14 +144,15 @@ La grille montre les créations faites pour Amane (films, jeu de cartes, site) e
 
 ## Le jeu de cartes
 
-`src/components/Jeu.tsx` pose six cartes sur un tapis : les quatre figures, encadrées par les deux as.
+`src/components/Jeu.tsx` pose une main de sept cartes sur un tapis. Les 54 cartes du jeu Amane sont dans `public/cartes/jeu/` (`H-V` = valet de cœur, `S-7` = sept de pique, `joker-1`…), rendues depuis le générateur du jeu (dépôt AMANE, `cartes/generateur/`) sans fond perdu.
 
+- **La main.** Les quatre figures de la maison sont toujours là : le Voiturier (valet), la Parisienne (dame), le Gentleman (roi) et le Majordome (joker), chacune dans une couleur tirée au hasard. Trois cartes sont tirées au hasard dans le reste du jeu, et l'ordre est mélangé. Jamais deux fois de suite la même main.
 - **La donne.** Quand le tapis arrive à l'écran, le paquet est distribué en éventail et les cartes se retournent une à une.
-- **Le battage.** « Battre les cartes » ramasse le paquet, le bat, puis redonne dans un nouvel ordre.
+- **Le battage.** « Battre les cartes » ramasse la main, coupe le paquet en deux moitiés qui se cambrent, les fait retomber l'une dans l'autre carte après carte, fait le pont, puis distribue une nouvelle main.
 - **Au pointeur.** Une carte se lève et s'incline vers la souris, un reflet doré la suit ; un trait de lumière passe régulièrement de carte en carte.
-- **Le choix.** Un clic redresse la carte et l'avance ; les autres s'effacent. Échap ou un second clic la repose.
+- **Le choix.** Un clic redresse la carte et l'avance, son nom s'affiche (« Le Voiturier — Valet », « Sept de cœur ») ; les autres s'effacent. Échap ou un second clic la repose.
 
-Avec « réduire les animations », les cartes sont posées d'emblée, sans mouvement.
+Avec « réduire les animations », les cartes sont posées d'emblée et un battage change la main sans mouvement.
 
 ## Ce que fait le formulaire
 

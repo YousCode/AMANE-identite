@@ -134,8 +134,10 @@ type Extra = {
   jk: string;
   jt: string;
   jp: string;
-  /** Rôles des quatre figures, puis noms des deux as. */
-  jRoles: [string, string, string, string, string, string];
+  /** Rôles des quatre figures : valet, dame, roi, joker. */
+  jRoles: [string, string, string, string];
+  /** Nom d'une carte de 1 (as) à 10, dans une couleur : pique, cœur, carreau, trèfle. */
+  jCarte: (rang: number, couleur: Couleur) => string;
   jShuffle: string;
   jHint: string;
   /** Réalisations (partie Création & marketing) */
@@ -237,7 +239,9 @@ const extra: Record<Lang, Extra> = {
     jk: 'Le jeu Amane',
     jt: 'Quatre figures, <em>une seule maison.</em>',
     jp: 'Cinquante-quatre cartes dessinées pour Amane. Le Voiturier, la Parisienne, le Gentleman et le Majordome y tiennent les rôles du valet, de la dame, du roi et du joker.',
-    jRoles: ['Valet', 'Dame', 'Roi', 'Joker', 'As de cœur', 'As de pique'],
+    jRoles: ['Valet', 'Dame', 'Roi', 'Joker'],
+    jCarte: (r, c) =>
+      `${['As', 'Deux', 'Trois', 'Quatre', 'Cinq', 'Six', 'Sept', 'Huit', 'Neuf', 'Dix'][r - 1]} de ${{ S: 'pique', H: 'cœur', D: 'carreau', C: 'trèfle' }[c]}`,
     jShuffle: 'Battre les cartes',
     jHint: 'Choisissez une carte',
     wk: 'Réalisations',
@@ -336,7 +340,9 @@ const extra: Record<Lang, Extra> = {
     jk: 'The Amane deck',
     jt: 'Four figures, <em>one house.</em>',
     jp: 'Fifty-four cards drawn for Amane. Le Voiturier, la Parisienne, le Gentleman and le Majordome play the jack, the queen, the king and the joker.',
-    jRoles: ['Jack', 'Queen', 'King', 'Joker', 'Ace of hearts', 'Ace of spades'],
+    jRoles: ['Jack', 'Queen', 'King', 'Joker'],
+    jCarte: (r, c) =>
+      `${['Ace', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'][r - 1]} of ${{ S: 'spades', H: 'hearts', D: 'diamonds', C: 'clubs' }[c]}`,
     jShuffle: 'Shuffle the deck',
     jHint: 'Pick a card',
     wk: 'Our work',
@@ -438,7 +444,9 @@ const extra: Record<Lang, Extra> = {
     jk: 'La baraja Amane',
     jt: 'Cuatro figuras, <em>una sola casa.</em>',
     jp: 'Cincuenta y cuatro cartas dibujadas para Amane. Le Voiturier, la Parisienne, le Gentleman y le Majordome hacen de jota, dama, rey y comodín.',
-    jRoles: ['Jota', 'Dama', 'Rey', 'Comodín', 'As de corazones', 'As de picas'],
+    jRoles: ['Jota', 'Dama', 'Rey', 'Comodín'],
+    jCarte: (r, c) =>
+      `${['As', 'Dos', 'Tres', 'Cuatro', 'Cinco', 'Seis', 'Siete', 'Ocho', 'Nueve', 'Diez'][r - 1]} de ${{ S: 'picas', H: 'corazones', D: 'diamantes', C: 'tréboles' }[c]}`,
     jShuffle: 'Barajar',
     jHint: 'Elija una carta',
     wk: 'Trabajos',
@@ -533,7 +541,9 @@ const extra: Record<Lang, Extra> = {
     jk: 'ورق لعب Amane',
     jt: 'أربع شخصيات، <em>ودار واحدة.</em>',
     jp: 'أربع وخمسون ورقة رُسمت خصيصاً لـAmane. يؤدّي فيها Le Voiturier وLa Parisienne وLe Gentleman وLe Majordome أدوار الولد والملكة والملك والجوكر.',
-    jRoles: ['الولد', 'الملكة', 'الملك', 'الجوكر', 'آس القلب', 'آس البستوني'],
+    jRoles: ['الولد', 'الملكة', 'الملك', 'الجوكر'],
+    jCarte: (r, c) =>
+      `${['آس', 'اثنان', 'ثلاثة', 'أربعة', 'خمسة', 'ستة', 'سبعة', 'ثمانية', 'تسعة', 'عشرة'][r - 1]} ${{ S: 'البستوني', H: 'الكبة', D: 'الديناري', C: 'السباتي' }[c]}`,
     jShuffle: 'اخلط الأوراق',
     jHint: 'اختر ورقة',
     wk: 'أعمالنا',
@@ -644,17 +654,19 @@ export const FLEET = [
 export const REQUEST_IDS = [...SERVICES.map((s) => s.id), 'autre'] as const;
 
 /** Figures du jeu de cartes : nom imprimé sur la carte (jamais traduit) et image. */
+/** Les quatre couleurs du jeu : pique, cœur, carreau, trèfle (initiales des fichiers de public/cartes/jeu/). */
+export type Couleur = 'S' | 'H' | 'D' | 'C';
+export const COULEURS: Couleur[] = ['S', 'H', 'D', 'C'];
+
 /**
- * Les cartes posées sur le tapis : les quatre figures, encadrées par les deux as.
- * `label` renvoie à `jRoles` : le rôle d'une figure (valet, dame, roi, joker) ou le nom d'un as.
+ * Les figures de la maison, toujours dans la main : le valet, la dame, le roi et le joker.
+ * `label` renvoie à `jRoles`. Les fichiers sont dans public/cartes/jeu/ : `H-V`, `S-D`, `C-R`, `joker-1`…
  */
-export const CARDS = [
-  { id: 'as-coeur', name: '', img: 'cartes/as-coeur.webp', label: 4 },
-  { id: 'voiturier', name: 'Le Voiturier', img: 'cartes/voiturier.webp', label: 0 },
-  { id: 'parisienne', name: 'La Parisienne', img: 'cartes/parisienne.webp', label: 1 },
-  { id: 'gentleman', name: 'Le Gentleman', img: 'cartes/gentleman.webp', label: 2 },
-  { id: 'majordome', name: 'Le Majordome', img: 'cartes/majordome.webp', label: 3 },
-  { id: 'as-pique', name: '', img: 'cartes/as-pique.webp', label: 5 },
+export const FIGURES = [
+  { rang: 'V', name: 'Le Voiturier', label: 0 },
+  { rang: 'D', name: 'La Parisienne', label: 1 },
+  { rang: 'R', name: 'Le Gentleman', label: 2 },
+  { rang: 'joker', name: 'Le Majordome', label: 3 },
 ] as const;
 
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
