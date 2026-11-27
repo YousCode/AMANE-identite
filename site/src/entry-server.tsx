@@ -19,7 +19,7 @@ function structuredData(lang: Lang, site: string) {
     url,
     image: `${site}/og.jpg`,
     logo: `${site}/favicon.svg`,
-    address: { '@type': 'PostalAddress', addressLocality: 'Paris', postalCode: '75008', addressCountry: 'FR' },
+    address: { '@type': 'PostalAddress', addressLocality: 'Paris', postalCode: '75016', addressCountry: 'FR' },
     areaServed: [
       { '@type': 'City', name: 'Paris' },
       { '@type': 'AdministrativeArea', name: 'Île-de-France' },
