@@ -2150,6 +2150,15 @@ html[dir='rtl'] .filtres button {
 .oeuvre.demi {
   grid-column: span 6;
 }
+/* Une seule réalisation : elle prend toute la largeur */
+.oeuvres.seule .oeuvre {
+  grid-column: 3 / span 8;
+}
+@media (max-width: 1100px) {
+  .oeuvres.seule .oeuvre {
+    grid-column: 1 / -1;
+  }
+}
 /* Une fois filtrée, la grille devient régulière */
 .oeuvres.filtre .oeuvre {
   grid-column: span 6;
@@ -2307,6 +2316,10 @@ html[dir='rtl'] .oeuvre__nom::after {
 }
 .oeuvre.bulles-on .oeuvre__plus i::after {
   transform: rotate(0deg);
+}
+.oeuvre.site .oeuvre__plus {
+  /* Sous la barre de la fenêtre de navigateur */
+  top: calc(34px + clamp(10px, 1.2vw, 16px));
 }
 .oeuvre__plus:focus-visible {
   outline: 1px solid var(--or);
