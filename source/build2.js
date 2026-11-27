@@ -178,7 +178,7 @@ footer{padding:50px 8vw;text-align:center;font-size:11px;letter-spacing:.42em;te
   <div class="k">06 — Applications</div>
   <h2>Le bordeaux en situation.</h2>
   <div class="grid g2">
-   <div><div class="mock"><div class="card a"><div class="m">${S('amane-monogramme-or.svg')}</div></div><div class="card b"><div class="w">${S('amane-logotype-bordeaux.svg')}</div><small>Sur rendez-vous — Paris VIII</small></div></div><div class="cap">Carte — recto motif Arcades + monogramme dorure or · verso coton 700 g, letterpress bordeaux</div></div>
+   <div><div class="mock"><div class="card a"><div class="m">${S('amane-monogramme-or.svg')}</div></div><div class="card b"><div class="w">${S('amane-logotype-bordeaux.svg')}</div><small>Sur rendez-vous — Paris XVI</small></div></div><div class="cap">Carte — recto motif Arcades + monogramme dorure or · verso coton 700 g, letterpress bordeaux</div></div>
    <div><div class="mock" style="background:linear-gradient(160deg,#cbc0ac,#b9ad97)"><div class="env"></div><div class="wax">${S('amane-sceau-bordeaux.svg').replace(/#5B1622/g, '#4a1019')}</div></div><div class="cap">Cachet de cire — sceau Ø 30 mm, cire bordeaux, sur chaque enveloppe remise au client</div></div>
    <div><div class="mock" style="background:linear-gradient(160deg,#e6ddcd,#d3c8b5)"><div class="box">${S('amane-sceau-or.svg')}</div></div><div class="cap">Coffret — papier bordeaux grainé, motif ton sur ton, sceau doré à chaud</div></div>
    <div><div class="mock" style="background:linear-gradient(160deg,#cbc0ac,#b9ad97)"><div class="tag">${S('amane-A-bordeaux.svg').replace(/#5B1622/g, '#3B0C15')}</div></div><div class="cap">Porte-clés cuir — A à serrure embossé à sec, remis avec chaque véhicule</div></div>
