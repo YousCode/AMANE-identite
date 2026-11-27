@@ -6,6 +6,8 @@ const clamp = (x: number, min = 0, max = 1) => Math.min(max, Math.max(min, x));
 type Item = { el: HTMLElement; scene: boolean; last: string; open: boolean };
 
 const OPEN_AT = 0.72;
+// Fin du fondu d'un film sur la dernière image du passage (voir « Passages » dans styles.css).
+const SHOW_AT = 0.64;
 /** Adoucissement « smootherstep » : départ et arrivée sans à-coup. */
 const ease = (t: number) => t * t * t * (t * (t * 6 - 15) + 10);
 
@@ -36,7 +38,7 @@ export function useScenes() {
       open: false,
     }));
     // Sans animation, tout est ouvert d'emblée.
-    if (reducedMotion()) items.current.forEach((it) => it.scene && it.el.classList.add('ouvert'));
+    if (reducedMotion()) items.current.forEach((it) => it.scene && it.el.classList.add('ouvert', 'montre'));
   }, []);
 
   useScrollFrame(() => {
@@ -62,6 +64,10 @@ export function useScenes() {
         it.el.style.setProperty('--enter', enter);
         it.el.style.setProperty('--e', ease(Number(enter)).toFixed(4));
         it.el.style.setProperty('--leave', leave);
+        // « montre » : la scène est entièrement visible. Jusque-là son film reste sur sa première image,
+        // qui est aussi la dernière du passage : le fondu se fait sur deux images identiques.
+        // Un film amené par son propre passage ne se montre qu'à la fin de celui-ci.
+        it.el.classList.toggle('montre', Number(enter) >= (it.el.dataset.passage ? 0.88 : SHOW_AT));
         if (!it.open && Number(enter) >= OPEN_AT) {
           it.open = true;
           it.el.classList.add('ouvert');

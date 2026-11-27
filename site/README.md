@@ -109,10 +109,11 @@ La devise de la maison, « Arrive as a Guest. Leave with a Story. », structure 
 `src/scenes.ts` écrit à chaque image cinq variables CSS (`--enter`, `--e`, `--leave`, `--drift`, `--page`) ; tout le mouvement est décrit dans `src/styles.css`.
 
 - **Les passages.** Les films et les ouvertures de chapitre sont des « scènes ». D'une scène à la suivante, il n'y a ni volet ni coupe : un plan de caméra, le passage, quitte la dernière image d'un film et arrive sur la première image du suivant. Il avance avec le défilement (`src/passages.ts`). Les douze passages sont listés dans `SERVICES` et `CHAPTERS` (`src/i18n.ts`) :
-  - le titre d'un chapitre est posé sur le passage qui mène à son premier film ;
+  - un chapitre s'ouvre sur le passage qui mène à son premier film ; quand le plan s'arrête, le titre se lit sur l'image immobile, puis s'efface avant que le film ne prenne le relais ;
   - à l'intérieur d'un chapitre, le second film arrive par son propre passage, puis la vidéo prend le relais.
 - **Les images des passages.** Chaque passage est livré en 40 images réunies dans un seul fichier : `public/passages/pNN-d.bin` en 16:9 (1600×900) et `pNN-m.bin` recadré en 9:16 pour les téléphones. `scripts/passages.sh <dossier>` les découpe depuis les plans d'origine (`p01.mp4` à `p12.mp4`). Les images de départ et d'arrivée qui ont servi à générer les plans sont dans `../references/passages/`.
-- **Le texte attend l'image.** Une scène reçoit la classe `ouvert` quand elle est presque en place : son titre se dévoile alors mot à mot, puis la phrase et le lien.
+- **Le texte attend l'image.** Une scène reçoit la classe `ouvert` quand elle est presque en place : son titre se dévoile alors mot à mot, puis la phrase et le lien. Le texte d'une scène qui s'en va disparaît avant que la suivante ne se montre : jamais deux textes l'un sur l'autre.
+- **Sans double image.** Un film reste sur sa première image, celle où s'arrête le passage, tant que le fondu n'est pas fini (classe `montre`), puis démarre.
 - **Le fil du récit** (`src/components/Fil.tsx`, grand écran) : Prologue, chapitres I à VII, Épilogue, cliquables, avec le chapitre en cours en or.
 - **Le sommaire** montre, au survol, l'image du chapitre dans une arche qui suit la souris.
 - **Le grain.** Un grain de film léger (`public/img/grain.png`) vit sur tous les films.
