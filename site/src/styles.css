@@ -1763,7 +1763,8 @@ html:not(.js) .rideau {
 .tapis {
   --w: clamp(140px, 14.4vw, max(232px, 11.6vw));
   /* L'éventail s'ouvre un peu plus quand le tapis passe au centre de l'écran */
-  --pas: calc(12deg - var(--drift, 0) * var(--drift, 0) * 4deg);
+  /* L'éventail garde la même ouverture quel que soit le nombre de cartes */
+  --pas: calc((66deg - var(--drift, 0) * var(--drift, 0) * 22deg) / (var(--n, 7) - 1));
   position: relative;
   display: grid;
   justify-items: center;
@@ -1891,21 +1892,36 @@ html:not(.js) .rideau {
   transition-duration: 0.5s;
   transition-delay: 0s;
 }
-/* Battage : une carte sur deux part à gauche, l'autre à droite, puis elles se recroisent */
-.js .tapis.bat .main li:nth-child(odd) {
-  animation: bat-g 0.28s var(--ease-io) 4 alternate;
+/* Coupe : le paquet se sépare en deux moitiés, qui se cambrent comme sous le pouce */
+.js .tapis.coupe .main li {
+  transition: transform 0.5s var(--ease-io);
+  transition-delay: 0s;
 }
-.js .tapis.bat .main li:nth-child(even) {
-  animation: bat-d 0.28s var(--ease-io) 4 alternate;
+.js .tapis.coupe .main li:nth-child(odd) {
+  transform: translate3d(calc(-62% - var(--k) * 1px), calc(-10px - var(--k) * 1.6px), 0) rotate(-9deg);
 }
-@keyframes bat-g {
-  to {
-    transform: translate3d(-64%, calc(var(--k) * -1.8px), 0) rotate(-6deg);
+.js .tapis.coupe .main li:nth-child(even) {
+  transform: translate3d(calc(62% + var(--k) * 1px), calc(-10px - var(--k) * 1.6px), 0) rotate(9deg);
+}
+.js .tapis.coupe .carte {
+  transform: rotateY(180deg) rotateX(14deg);
+}
+/* Riffle : les deux moitiés retombent l'une dans l'autre, une carte après l'autre, puis le pont */
+.js .tapis.riffle .main li {
+  transform: translate3d(calc(var(--k) * -1.2px), calc(var(--k) * -1.8px), 0) rotate(calc(var(--k) * 0.6deg - 2deg));
+  transition: transform 0.3s cubic-bezier(0.55, 0, 0.8, 0.4);
+  transition-delay: calc(var(--k) * 80ms);
+}
+.js .tapis.riffle .main {
+  animation: pont 0.6s var(--ease) calc(var(--n, 7) * 80ms + 0.3s) both;
+}
+@keyframes pont {
+  0%,
+  100% {
+    transform: none;
   }
-}
-@keyframes bat-d {
-  to {
-    transform: translate3d(64%, calc(var(--k) * -1.8px), 0) rotate(6deg);
+  45% {
+    transform: translate3d(0, -14px, 0) scale(1.035);
   }
 }
 
@@ -3033,7 +3049,7 @@ html[dir='rtl'] .f__label {
   .tapis {
     /* 76 px au plus étroit : à 320 px, l'éventail des six cartes tient dans l'écran */
     --w: clamp(76px, 24.5vw, 132px);
-    --pas: calc(10deg - var(--drift, 0) * var(--drift, 0) * 3deg);
+    --pas: calc((54deg - var(--drift, 0) * var(--drift, 0) * 16deg) / (var(--n, 7) - 1));
   }
   .main {
     height: calc(var(--w) * 1.4 + 120px);
